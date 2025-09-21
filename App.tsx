@@ -1,20 +1,31 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {NavigationContainer} from '@react-navigation/native';
 import {SafeAreaProvider} from 'react-native-safe-area-context';
 import Toast from 'react-native-toast-message';
-import * as SplashScreen from 'expo-splash-screen';
+import * as ExpoSplashScreen from 'expo-splash-screen';
 
 import AuthProvider from './src/context/AuthContext';
 import { AppNavigator } from './src/navigation/AppNavigator';
+import SplashScreen from './src/screens/SplashScreen';
 
 // Prevent splash screen from auto-hiding
-SplashScreen.preventAutoHideAsync();
+ExpoSplashScreen.preventAutoHideAsync();
 
 const App = (): JSX.Element => {
+  const [showSplash, setShowSplash] = useState(true);
+
   React.useEffect(() => {
-    // Hide splash screen after app is ready
-    SplashScreen.hideAsync();
+    // Hide expo splash screen immediately
+    ExpoSplashScreen.hideAsync();
   }, []);
+
+  const handleSplashFinish = () => {
+    setShowSplash(false);
+  };
+
+  if (showSplash) {
+    return <SplashScreen onAnimationFinish={handleSplashFinish} />;
+  }
 
   return (
     <SafeAreaProvider>
