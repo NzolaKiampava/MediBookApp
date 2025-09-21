@@ -6,62 +6,119 @@ import {
   ScrollView,
   TouchableOpacity,
   Alert,
+  Dimensions,
 } from 'react-native';
 import {MaterialIcons} from '@expo/vector-icons';
 import {useAuth} from '../../context/AuthContext';
 
+const {width} = Dimensions.get('window');
+
 const ProfileScreen = () => {
   const {user, signOut} = useAuth();
+
+  const profileStats = [
+    {
+      id: 'consultas',
+      title: 'Consultas',
+      value: '12',
+      subtitle: 'Este ano',
+      icon: 'medical-services',
+      color: '#3B82F6',
+    },
+    {
+      id: 'exames',
+      title: 'Exames',
+      value: '8',
+      subtitle: 'Este ano',
+      icon: 'assignment',
+      color: '#10B981',
+    },
+    {
+      id: 'economia',
+      title: 'Economia',
+      value: 'R$ 450',
+      subtitle: 'Com o app',
+      icon: 'savings',
+      color: '#F59E0B',
+    },
+  ];
 
   const profileOptions = [
     {
       id: 'personal',
       title: 'Dados Pessoais',
-      icon: 'person' as const,
+      subtitle: 'Editar informações do perfil',
+      icon: 'person',
+      color: '#3B82F6',
       onPress: () => Alert.alert('Em desenvolvimento', 'Esta funcionalidade será implementada em breve'),
     },
     {
       id: 'medical',
       title: 'Histórico Médico',
-      icon: 'local-hospital' as const,
+      subtitle: 'Consultas e exames anteriores',
+      icon: 'local-hospital',
+      color: '#10B981',
       onPress: () => Alert.alert('Em desenvolvimento', 'Esta funcionalidade será implementada em breve'),
     },
     {
       id: 'insurance',
       title: 'Plano de Saúde',
-      icon: 'card-membership' as const,
+      subtitle: 'Gerenciar convênios médicos',
+      icon: 'card-membership',
+      color: '#8B5CF6',
+      onPress: () => Alert.alert('Em desenvolvimento', 'Esta funcionalidade será implementada em breve'),
+    },
+    {
+      id: 'documents',
+      title: 'Documentos',
+      subtitle: 'Receitas, laudos e atestados',
+      icon: 'description',
+      color: '#F59E0B',
       onPress: () => Alert.alert('Em desenvolvimento', 'Esta funcionalidade será implementada em breve'),
     },
     {
       id: 'notifications',
       title: 'Notificações',
-      icon: 'notifications' as const,
+      subtitle: 'Configurar alertas e lembretes',
+      icon: 'notifications',
+      color: '#EF4444',
       onPress: () => Alert.alert('Em desenvolvimento', 'Esta funcionalidade será implementada em breve'),
     },
     {
       id: 'privacy',
-      title: 'Privacidade',
-      icon: 'security' as const,
+      title: 'Privacidade e Segurança',
+      subtitle: 'Controle de dados e privacidade',
+      icon: 'security',
+      color: '#6B7280',
+      onPress: () => Alert.alert('Em desenvolvimento', 'Esta funcionalidade será implementada em breve'),
+    },
+  ];
+
+  const supportOptions = [
+    {
+      id: 'help',
+      title: 'Central de Ajuda',
+      icon: 'help',
       onPress: () => Alert.alert('Em desenvolvimento', 'Esta funcionalidade será implementada em breve'),
     },
     {
-      id: 'help',
-      title: 'Ajuda e Suporte',
-      icon: 'help' as const,
+      id: 'contact',
+      title: 'Fale Conosco',
+      icon: 'contact-support',
       onPress: () => Alert.alert('Em desenvolvimento', 'Esta funcionalidade será implementada em breve'),
     },
     {
       id: 'about',
       title: 'Sobre o App',
-      icon: 'info' as const,
-      onPress: () => Alert.alert('MediBook', 'Versão 1.0.0\n\nAplicativo de reservas hospitalares desenvolvido para facilitar o agendamento de consultas médicas, exames e procedimentos.'),
+      icon: 'info',
+      onPress: () => Alert.alert('MediBook', 'Versão 1.0.0\n\nAplicativo de reservas hospitalares desenvolvido para facilitar o agendamento de consultas médicas, exames e procedimentos.\n\n© 2025 MediBook. Todos os direitos reservados.'),
     },
   ];
 
   const handleLogout = () => {
     Alert.alert(
-      'Sair',
-      'Tem certeza que deseja sair da sua conta?',
+      'Sair da Conta',
+      'Tem certeza que deseja sair? Você precisará fazer login novamente para acessar o app.',
       [
         {text: 'Cancelar', style: 'cancel'},
         {text: 'Sair', onPress: signOut, style: 'destructive'},
@@ -70,60 +127,97 @@ const ProfileScreen = () => {
   };
 
   return (
-    <ScrollView style={styles.container}>
-      {/* Header do perfil */}
-      <View style={styles.profileHeader}>
-        <View style={styles.avatarContainer}>
-          <MaterialIcons name="account-circle" size={80} color="#4A90E2" />
-        </View>
-        <Text style={styles.userName}>{user?.nome}</Text>
-        <Text style={styles.userEmail}>{user?.email}</Text>
-      </View>
-
-      {/* Informações rápidas */}
-      <View style={styles.quickInfoContainer}>
-        <View style={styles.quickInfoCard}>
-          <Text style={styles.quickInfoNumber}>3</Text>
-          <Text style={styles.quickInfoLabel}>Consultas</Text>
-        </View>
-        <View style={styles.quickInfoCard}>
-          <Text style={styles.quickInfoNumber}>2</Text>
-          <Text style={styles.quickInfoLabel}>Exames</Text>
-        </View>
-        <View style={styles.quickInfoCard}>
-          <Text style={styles.quickInfoNumber}>5</Text>
-          <Text style={styles.quickInfoLabel}>Total</Text>
+    <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
+      {/* Header */}
+      <View style={styles.header}>
+        <View style={styles.profileInfo}>
+          <View style={styles.avatarContainer}>
+            <MaterialIcons name="account-circle" size={80} color="#FFFFFF" />
+            <TouchableOpacity style={styles.editAvatarButton}>
+              <MaterialIcons name="camera-alt" size={16} color="#FFFFFF" />
+            </TouchableOpacity>
+          </View>
+          <Text style={styles.userName}>{user?.nome}</Text>
+          <Text style={styles.userEmail}>{user?.email}</Text>
+          <TouchableOpacity style={styles.editProfileButton}>
+            <MaterialIcons name="edit" size={16} color="#3B82F6" />
+            <Text style={styles.editProfileText}>Editar Perfil</Text>
+          </TouchableOpacity>
         </View>
       </View>
 
-      {/* Opções do perfil */}
-      <View style={styles.optionsContainer}>
+      {/* Stats */}
+      <View style={styles.statsContainer}>
+        {profileStats.map(stat => (
+          <View key={stat.id} style={styles.statCard}>
+            <View style={[styles.statIcon, {backgroundColor: `${stat.color}20`}]}>
+              <MaterialIcons name={stat.icon} size={24} color={stat.color} />
+            </View>
+            <Text style={styles.statValue}>{stat.value}</Text>
+            <Text style={styles.statTitle}>{stat.title}</Text>
+            <Text style={styles.statSubtitle}>{stat.subtitle}</Text>
+          </View>
+        ))}
+      </View>
+
+      {/* Profile Options */}
+      <View style={styles.section}>
+        <Text style={styles.sectionTitle}>Minha Conta</Text>
         {profileOptions.map(option => (
           <TouchableOpacity
             key={option.id}
             style={styles.optionItem}
-            onPress={option.onPress}>
+            onPress={option.onPress}
+            activeOpacity={0.8}>
             <View style={styles.optionLeft}>
-              <MaterialIcons name={option.icon} size={24} color="#4A90E2" />
-              <Text style={styles.optionTitle}>{option.title}</Text>
+              <View style={[styles.optionIcon, {backgroundColor: `${option.color}20`}]}>
+                <MaterialIcons name={option.icon} size={20} color={option.color} />
+              </View>
+              <View style={styles.optionContent}>
+                <Text style={styles.optionTitle}>{option.title}</Text>
+                <Text style={styles.optionSubtitle}>{option.subtitle}</Text>
+              </View>
             </View>
-            <MaterialIcons name="chevron-right" size={24} color="#666" />
+            <MaterialIcons name="chevron-right" size={20} color="#9CA3AF" />
           </TouchableOpacity>
         ))}
       </View>
 
-      {/* Botão de logout */}
-      <View style={styles.logoutContainer}>
+      {/* Support */}
+      <View style={styles.section}>
+        <Text style={styles.sectionTitle}>Suporte</Text>
+        {supportOptions.map(option => (
+          <TouchableOpacity
+            key={option.id}
+            style={styles.optionItem}
+            onPress={option.onPress}
+            activeOpacity={0.8}>
+            <View style={styles.optionLeft}>
+              <View style={styles.supportIcon}>
+                <MaterialIcons name={option.icon} size={20} color="#6B7280" />
+              </View>
+              <Text style={styles.optionTitle}>{option.title}</Text>
+            </View>
+            <MaterialIcons name="chevron-right" size={20} color="#9CA3AF" />
+          </TouchableOpacity>
+        ))}
+      </View>
+
+      {/* Logout */}
+      <View style={styles.section}>
         <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
-          <MaterialIcons name="logout" size={24} color="#FF6B6B" />
+          <MaterialIcons name="logout" size={20} color="#EF4444" />
           <Text style={styles.logoutText}>Sair da Conta</Text>
         </TouchableOpacity>
       </View>
 
-      {/* Informações da versão */}
-      <View style={styles.versionContainer}>
-        <Text style={styles.versionText}>MediBook v1.0.0</Text>
+      {/* App Info */}
+      <View style={styles.appInfo}>
+        <Text style={styles.appVersion}>MediBook v1.0.0</Text>
+        <Text style={styles.appCopyright}>© 2025 MediBook. Todos os direitos reservados.</Text>
       </View>
+
+      <View style={styles.bottomSpacing} />
     </ScrollView>
   );
 };
@@ -131,67 +225,121 @@ const ProfileScreen = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F8F9FA',
+    backgroundColor: '#F8FAFC',
   },
-  profileHeader: {
-    backgroundColor: '#4A90E2',
-    padding: 30,
+  header: {
+    backgroundColor: '#3B82F6',
+    paddingTop: 50,
+    paddingHorizontal: 24,
+    paddingBottom: 32,
+    borderBottomLeftRadius: 24,
+    borderBottomRightRadius: 24,
+  },
+  profileInfo: {
     alignItems: 'center',
   },
   avatarContainer: {
-    marginBottom: 15,
+    position: 'relative',
+    marginBottom: 16,
+  },
+  editAvatarButton: {
+    position: 'absolute',
+    bottom: 0,
+    right: 0,
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    backgroundColor: '#10B981',
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 2,
+    borderColor: '#FFFFFF',
   },
   userName: {
     fontSize: 24,
     fontWeight: 'bold',
     color: '#FFFFFF',
-    marginBottom: 5,
+    marginBottom: 4,
   },
   userEmail: {
-    fontSize: 16,
-    color: '#E8F4FD',
+    fontSize: 14,
+    color: 'rgba(255, 255, 255, 0.8)',
+    marginBottom: 16,
   },
-  quickInfoContainer: {
+  editProfileButton: {
     flexDirection: 'row',
-    justifyContent: 'space-around',
-    margin: 20,
-  },
-  quickInfoCard: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 10,
-    padding: 20,
     alignItems: 'center',
+    backgroundColor: '#FFFFFF',
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 20,
+  },
+  editProfileText: {
+    marginLeft: 4,
+    fontSize: 14,
+    color: '#3B82F6',
+    fontWeight: '500',
+  },
+  statsContainer: {
+    flexDirection: 'row',
+    paddingHorizontal: 24,
+    marginTop: -16,
+    gap: 12,
+  },
+  statCard: {
     flex: 1,
-    marginHorizontal: 5,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 16,
+    padding: 16,
+    alignItems: 'center',
     shadowColor: '#000',
     shadowOffset: {
       width: 0,
       height: 2,
     },
-    shadowOpacity: 0.1,
-    shadowRadius: 3.84,
-    elevation: 5,
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
+    elevation: 3,
   },
-  quickInfoNumber: {
-    fontSize: 24,
+  statIcon: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  statValue: {
+    fontSize: 18,
     fontWeight: 'bold',
-    color: '#4A90E2',
-    marginBottom: 5,
+    color: '#1F2937',
+    marginBottom: 2,
   },
-  quickInfoLabel: {
+  statTitle: {
     fontSize: 12,
-    color: '#666',
-    textAlign: 'center',
+    color: '#6B7280',
+    fontWeight: '500',
+    marginBottom: 2,
   },
-  optionsContainer: {
-    marginHorizontal: 20,
-    marginBottom: 20,
+  statSubtitle: {
+    fontSize: 10,
+    color: '#9CA3AF',
+  },
+  section: {
+    paddingHorizontal: 24,
+    marginTop: 32,
+  },
+  sectionTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#1F2937',
+    marginBottom: 16,
   },
   optionItem: {
     backgroundColor: '#FFFFFF',
-    borderRadius: 10,
-    padding: 15,
-    marginBottom: 2,
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 8,
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
@@ -201,45 +349,85 @@ const styles = StyleSheet.create({
       height: 1,
     },
     shadowOpacity: 0.05,
-    shadowRadius: 2,
+    shadowRadius: 4,
     elevation: 2,
   },
   optionLeft: {
     flexDirection: 'row',
     alignItems: 'center',
+    flex: 1,
+  },
+  optionIcon: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 12,
+  },
+  supportIcon: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: '#F3F4F6',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 12,
+  },
+  optionContent: {
+    flex: 1,
   },
   optionTitle: {
     fontSize: 16,
-    color: '#333',
-    marginLeft: 15,
+    color: '#1F2937',
+    fontWeight: '500',
+    marginBottom: 2,
   },
-  logoutContainer: {
-    marginHorizontal: 20,
-    marginBottom: 20,
+  optionSubtitle: {
+    fontSize: 12,
+    color: '#6B7280',
   },
   logoutButton: {
     backgroundColor: '#FFFFFF',
-    borderRadius: 10,
-    padding: 15,
+    borderRadius: 12,
+    padding: 16,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 1,
-    borderColor: '#FF6B6B',
+    borderColor: '#FEE2E2',
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 1,
+    },
+    shadowOpacity: 0.05,
+    shadowRadius: 4,
+    elevation: 2,
   },
   logoutText: {
     fontSize: 16,
-    color: '#FF6B6B',
+    color: '#EF4444',
     fontWeight: '600',
-    marginLeft: 10,
+    marginLeft: 8,
   },
-  versionContainer: {
+  appInfo: {
     alignItems: 'center',
-    paddingBottom: 30,
+    paddingHorizontal: 24,
+    marginTop: 32,
   },
-  versionText: {
+  appVersion: {
     fontSize: 12,
-    color: '#999',
+    color: '#9CA3AF',
+    marginBottom: 4,
+  },
+  appCopyright: {
+    fontSize: 10,
+    color: '#D1D5DB',
+    textAlign: 'center',
+  },
+  bottomSpacing: {
+    height: 32,
   },
 });
 
