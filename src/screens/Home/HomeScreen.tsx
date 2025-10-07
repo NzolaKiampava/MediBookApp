@@ -5,454 +5,545 @@ import {
   StyleSheet,
   ScrollView,
   TouchableOpacity,
-  Dimensions,
 } from 'react-native';
+import {LinearGradient} from 'expo-linear-gradient';
 import {MaterialIcons} from '@expo/vector-icons';
-import {useAuth} from '../../context/AuthContext';
 
-const {width} = Dimensions.get('window');
+import {useAuth} from '../../context/AuthContext';
+import {colors, gradients} from '../../theme/colors';
+
+type QuickAction = {
+  id: number;
+  title: string;
+  subtitle: string;
+  icon: keyof typeof MaterialIcons.glyphMap;
+  onPress: () => void;
+  gradient: string[];
+};
+
+type Appointment = {
+  id: number;
+  title: string;
+  professional: string;
+  modality: string;
+  date: string;
+  location: string;
+  status: 'confirmado' | 'agendado';
+  color: string;
+};
+
+type WellbeingInsight = {
+  id: number;
+  icon: keyof typeof MaterialIcons.glyphMap;
+  title: string;
+  description: string;
+  color: string;
+  textColor: string;
+};
+
+type CareTip = {
+  id: number;
+  icon: keyof typeof MaterialIcons.glyphMap;
+  title: string;
+  description: string;
+};
 
 const HomeScreen = ({navigation}: any) => {
   const {user} = useAuth();
+  const firstName = user?.nome?.split(' ')[0] || 'Paciente';
 
-  const quickActions = [
+  const quickActions: QuickAction[] = [
     {
       id: 1,
-      title: 'Nova Consulta',
-      subtitle: 'Agendar consulta médica',
+      title: 'Agendar consulta',
+      subtitle: 'Escolha o especialista ideal',
       icon: 'medical-services',
-      color: '#3B82F6',
-      gradient: ['#3B82F6', '#1D4ED8'],
+      gradient: gradients.primary,
       onPress: () => navigation.navigate('Booking'),
     },
     {
       id: 2,
-      title: 'Agendar Exame',
-      subtitle: 'Laboratório e diagnóstico',
-      icon: 'assignment',
-      color: '#10B981',
-      gradient: ['#10B981', '#059669'],
+      title: 'Exames e diagnósticos',
+      subtitle: 'Disponibilidade em tempo real',
+      icon: 'biotech',
+      gradient: ['#1CB09A', '#119B84'],
       onPress: () => navigation.navigate('Booking'),
     },
     {
       id: 3,
-      title: 'Buscar Hospital',
-      subtitle: 'Encontrar unidades próximas',
-      icon: 'local-hospital',
-      color: '#F59E0B',
-      gradient: ['#F59E0B', '#D97706'],
+      title: 'Teleconsulta imediata',
+      subtitle: 'Conecte-se em minutos',
+      icon: 'video-call',
+      gradient: ['#6650F2', '#4C3BD6'],
       onPress: () => navigation.navigate('Search'),
     },
     {
       id: 4,
-      title: 'Minhas Consultas',
-      subtitle: 'Histórico e agendamentos',
-      icon: 'event',
-      color: '#8B5CF6',
-      gradient: ['#8B5CF6', '#7C3AED'],
+      title: 'Histórico clínico',
+      subtitle: 'Acompanhe sua jornada',
+      icon: 'folder-open',
+      gradient: ['#FF8B5C', '#F97316'],
       onPress: () => navigation.navigate('Appointments'),
     },
   ];
 
-  const upcomingAppointments = [
+  const upcomingAppointments: Appointment[] = [
     {
       id: 1,
-      type: 'Consulta',
-      title: 'Cardiologia',
-      doctor: 'Dr. João Silva',
-      date: '25/09/2025',
-      time: '14:30',
-      hospital: 'Hospital São Lucas',
+      title: 'Consulta de cardiologia',
+      professional: 'Dra. Helena Martins',
+      modality: 'Presencial',
+      date: '25 Set · 14:30',
+      location: 'Hospital Vida Plena · Sala 204',
       status: 'confirmado',
-      color: '#3B82F6',
+      color: colors.primary,
     },
     {
       id: 2,
-      type: 'Exame',
-      title: 'Hemograma Completo',
-      date: '28/09/2025',
-      time: '08:00',
-      hospital: 'Lab Diagnóstica',
+      title: 'Exame · Hemograma completo',
+      professional: 'Lab Diagnóstica',
+      modality: 'Laboratorial',
+      date: '28 Set · 08:00',
+      location: 'Unidade Central · Andar Térreo',
       status: 'agendado',
-      color: '#10B981',
+      color: colors.success,
     },
   ];
 
-  const healthTips = [
+  const wellbeingHighlights: WellbeingInsight[] = [
     {
       id: 1,
-      icon: 'water-drop',
-      title: 'Hidratação',
-      tip: 'Beba pelo menos 2 litros de água por dia',
-      color: '#06B6D4',
+      icon: 'favorite-border',
+      title: 'Sinais vitais estáveis',
+      description: 'Últimos registros dentro da faixa recomendada',
+      color: '#E0F2FE',
+      textColor: colors.primaryDark,
     },
     {
       id: 2,
-      icon: 'fitness-center',
-      title: 'Exercícios',
-      tip: '30 minutos de atividade física diária',
-      color: '#10B981',
+      icon: 'self-improvement',
+      title: 'Hábitos saudáveis em progresso',
+      description: 'Você completou 72% do plano de bem-estar',
+      color: '#D1FAE5',
+      textColor: colors.success,
     },
     {
       id: 3,
-      icon: 'bedtime',
-      title: 'Sono',
-      tip: 'Durma de 7 a 9 horas por noite',
-      color: '#8B5CF6',
+      icon: 'emoji-events',
+      title: 'Recomendações personalizadas',
+      description: '3 novos insights com base no seu perfil de saúde',
+      color: '#EDE9FE',
+      textColor: '#6C2BD9',
     },
   ];
 
-  const getGreeting = () => {
-    const hour = new Date().getHours();
-    if (hour < 12) return 'Bom dia';
-    if (hour < 18) return 'Boa tarde';
-    return 'Boa noite';
-  };
+  const careTips: CareTip[] = [
+    {
+      id: 1,
+      icon: 'schedule',
+      title: 'Mantenha agendamentos em dia',
+      description: 'Lembre-se de chegar com 15 minutos de antecedência para atualizações cadastrais.',
+    },
+    {
+      id: 2,
+      icon: 'spa',
+      title: 'Rotina de bem-estar',
+      description: 'Reserve 30 minutos do seu dia para atividades que promovam relaxamento e equilíbrio.',
+    },
+    {
+      id: 3,
+      icon: 'health-and-safety',
+      title: 'Seu seguro está ativo',
+      description: 'Plano Prevent Senior · Cobertura total para consultas, exames e telemedicina.',
+    },
+  ];
 
   return (
-    <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
-      {/* Header */}
-      <View style={styles.header}>
-        <View style={styles.headerTop}>
-          <View>
-            <Text style={styles.greeting}>{getGreeting()},</Text>
-            <Text style={styles.userName}>{user?.nome?.split(' ')[0] || 'Usuário'}</Text>
-          </View>
-          <TouchableOpacity style={styles.notificationButton}>
-            <MaterialIcons name="notifications" size={24} color="#FFFFFF" />
-            <View style={styles.notificationBadge}>
-              <Text style={styles.notificationBadgeText}>2</Text>
+    <View style={styles.screen}>
+      <ScrollView
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}>
+        <LinearGradient colors={gradients.primary} style={styles.heroSection}>
+          <View style={styles.heroHeader}>
+            <View>
+              <Text style={styles.greeting}>Olá, {firstName}</Text>
+              <Text style={styles.heroTitle}>Como podemos cuidar de você hoje?</Text>
             </View>
-          </TouchableOpacity>
-        </View>
-        <Text style={styles.headerSubtitle}>Como podemos cuidar da sua saúde hoje?</Text>
-      </View>
+            <View style={styles.heroBadge}>
+              <MaterialIcons name="verified" size={18} color="#FFFFFF" />
+              <Text style={styles.heroBadgeText}>Paciente Premium</Text>
+            </View>
+          </View>
+          <View style={styles.heroStats}>
+            <View style={styles.heroStatCard}>
+              <Text style={styles.heroStatValue}>05</Text>
+              <Text style={styles.heroStatLabel}>Consultas ativas</Text>
+            </View>
+            <View style={styles.heroStatCard}>
+              <Text style={styles.heroStatValue}>02</Text>
+              <Text style={styles.heroStatLabel}>Exames agendados</Text>
+            </View>
+            <View style={styles.heroStatCard}>
+              <Text style={styles.heroStatValue}>98%</Text>
+              <Text style={styles.heroStatLabel}>Satisfação geral</Text>
+            </View>
+          </View>
+        </LinearGradient>
 
-      {/* Quick Actions */}
-      <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Ações Rápidas</Text>
-        <View style={styles.quickActionsGrid}>
-          {quickActions.map(action => (
-            <TouchableOpacity
-              key={action.id}
-              style={[styles.quickActionCard, {backgroundColor: action.color}]}
-              onPress={action.onPress}
-              activeOpacity={0.8}>
-              <View style={styles.quickActionContent}>
-                <MaterialIcons
-                  name={action.icon}
-                  size={28}
-                  color="#FFFFFF"
-                  style={styles.quickActionIcon}
-                />
-                <Text style={styles.quickActionTitle}>{action.title}</Text>
-                <Text style={styles.quickActionSubtitle}>{action.subtitle}</Text>
-              </View>
-              <View style={styles.quickActionArrow}>
-                <MaterialIcons name="arrow-forward" size={20} color="rgba(255, 255, 255, 0.8)" />
-              </View>
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Ações rápidas</Text>
+          <Text style={styles.sectionSubtitle}>
+            Gerencie seus agendamentos, teleconsultas e resultados em poucos toques.
+          </Text>
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.quickActionsRow}>
+            {quickActions.map(action => (
+              <LinearGradient key={action.id} colors={action.gradient} style={styles.quickActionCard}>
+                <TouchableOpacity activeOpacity={0.9} onPress={action.onPress}>
+                  <View style={styles.quickActionContent}>
+                    <View style={styles.quickIconWrapper}>
+                      <MaterialIcons name={action.icon} size={24} color="#FFFFFF" />
+                    </View>
+                    <Text style={styles.quickActionTitle}>{action.title}</Text>
+                    <Text style={styles.quickActionSubtitle}>{action.subtitle}</Text>
+                  </View>
+                  <View style={styles.quickActionFooter}>
+                    <Text style={styles.quickActionFooterText}>Acessar</Text>
+                    <MaterialIcons name="arrow-forward" size={18} color="#FFFFFF" />
+                  </View>
+                </TouchableOpacity>
+              </LinearGradient>
+            ))}
+          </ScrollView>
+        </View>
+
+        <View style={styles.section}>
+          <View style={styles.sectionHeader}>
+            <View>
+              <Text style={styles.sectionTitle}>Próximos compromissos</Text>
+              <Text style={styles.sectionSubtitle}>Acompanhe horários, profissionais e status em tempo real.</Text>
+            </View>
+            <TouchableOpacity onPress={() => navigation.navigate('Appointments')} activeOpacity={0.8}>
+              <Text style={styles.sectionLink}>Ver agenda</Text>
             </TouchableOpacity>
-          ))}
-        </View>
-      </View>
-
-      {/* Upcoming Appointments */}
-      <View style={styles.section}>
-        <View style={styles.sectionHeader}>
-          <Text style={styles.sectionTitle}>Próximos Agendamentos</Text>
-          <TouchableOpacity onPress={() => navigation.navigate('Appointments')}>
-            <Text style={styles.seeAllText}>Ver todos</Text>
-          </TouchableOpacity>
-        </View>
-        
-        {upcomingAppointments.map(appointment => (
-          <View key={appointment.id} style={styles.appointmentCard}>
-            <View style={[styles.appointmentIndicator, {backgroundColor: appointment.color}]} />
-            <View style={styles.appointmentContent}>
-              <View style={styles.appointmentHeader}>
-                <View>
-                  <Text style={styles.appointmentType}>{appointment.type}</Text>
-                  <Text style={styles.appointmentTitle}>{appointment.title}</Text>
-                  {appointment.doctor && (
-                    <Text style={styles.appointmentDoctor}>{appointment.doctor}</Text>
-                  )}
-                </View>
-                <View style={[styles.statusBadge, {backgroundColor: `${appointment.color}20`}]}>
-                  <Text style={[styles.statusText, {color: appointment.color}]}>
-                    {appointment.status}
-                  </Text>
-                </View>
-              </View>
-              <View style={styles.appointmentDetails}>
-                <View style={styles.appointmentDetailItem}>
-                  <MaterialIcons name="today" size={16} color="#6B7280" />
-                  <Text style={styles.appointmentDetailText}>
-                    {appointment.date} às {appointment.time}
-                  </Text>
-                </View>
-                <View style={styles.appointmentDetailItem}>
-                  <MaterialIcons name="location-on" size={16} color="#6B7280" />
-                  <Text style={styles.appointmentDetailText}>{appointment.hospital}</Text>
-                </View>
-              </View>
-            </View>
           </View>
-        ))}
-      </View>
-
-      {/* Health Tips */}
-      <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Dicas de Saúde</Text>
-        <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-          <View style={styles.healthTipsContainer}>
-            {healthTips.map(tip => (
-              <View key={tip.id} style={styles.healthTipCard}>
-                <View style={[styles.healthTipIcon, {backgroundColor: `${tip.color}20`}]}>
-                  <MaterialIcons name={tip.icon} size={24} color={tip.color} />
+          <View style={styles.cardStack}>
+            {upcomingAppointments.map(appointment => (
+              <View key={appointment.id} style={styles.appointmentCard}>
+                <View style={[styles.appointmentStatus, {backgroundColor: `${appointment.color}1A`}]}>
+                  <MaterialIcons name="event-available" size={18} color={appointment.color} />
+                  <Text style={[styles.appointmentStatusText, {color: appointment.color}]}> {appointment.status}</Text>
                 </View>
-                <Text style={styles.healthTipTitle}>{tip.title}</Text>
-                <Text style={styles.healthTipText}>{tip.tip}</Text>
+                <Text style={styles.appointmentTitle}>{appointment.title}</Text>
+                <Text style={styles.appointmentProfessional}>{appointment.professional}</Text>
+                <View style={styles.appointmentInfoRow}>
+                  <MaterialIcons name="access-time" size={16} color={colors.muted} />
+                  <Text style={styles.appointmentInfoText}>{appointment.date}</Text>
+                </View>
+                <View style={styles.appointmentInfoRow}>
+                  <MaterialIcons name="place" size={16} color={colors.muted} />
+                  <Text style={styles.appointmentInfoText}>{appointment.location}</Text>
+                </View>
               </View>
             ))}
           </View>
-        </ScrollView>
-      </View>
+        </View>
 
-      {/* Bottom spacing */}
-      <View style={styles.bottomSpacing} />
-    </ScrollView>
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Bem-estar em destaque</Text>
+          <Text style={styles.sectionSubtitle}>
+            Monitore sua saúde com insights personalizados gerados pelas suas atividades recentes.
+          </Text>
+          <View style={styles.wellbeingGrid}>
+            {wellbeingHighlights.map(highlight => (
+              <View key={highlight.id} style={[styles.wellbeingCard, {backgroundColor: highlight.color}]}> 
+                <View style={[styles.iconBadge, {backgroundColor: '#FFFFFF33'}]}>
+                  <MaterialIcons name={highlight.icon} size={22} color={highlight.textColor} />
+                </View>
+                <Text style={[styles.wellbeingTitle, {color: highlight.textColor}]}>{highlight.title}</Text>
+                <Text style={[styles.wellbeingDescription, {color: highlight.textColor}]}> {highlight.description}</Text>
+              </View>
+            ))}
+          </View>
+        </View>
+
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Cuidados recomendados</Text>
+          <Text style={styles.sectionSubtitle}>
+            Dicas personalizadas para manter sua saúde equilibrada ao longo da semana.
+          </Text>
+          <View style={styles.tipList}>
+            {careTips.map(tip => (
+              <View key={tip.id} style={styles.tipCard}>
+                <View style={styles.tipIconWrapper}>
+                  <MaterialIcons name={tip.icon} size={22} color={colors.primaryDark} />
+                </View>
+                <View style={styles.tipTextContainer}>
+                  <Text style={styles.tipTitle}>{tip.title}</Text>
+                  <Text style={styles.tipDescription}>{tip.description}</Text>
+                </View>
+              </View>
+            ))}
+          </View>
+        </View>
+      </ScrollView>
+    </View>
   );
 };
 
 const styles = StyleSheet.create({
-  container: {
+  screen: {
     flex: 1,
-    backgroundColor: '#F8FAFC',
+    backgroundColor: colors.background,
   },
-  header: {
-    backgroundColor: '#3B82F6',
-    paddingTop: 50,
+  scrollContent: {
+    paddingBottom: 90,
+  },
+  heroSection: {
     paddingHorizontal: 24,
-    paddingBottom: 32,
-    borderBottomLeftRadius: 24,
-    borderBottomRightRadius: 24,
+    paddingTop: 42,
+    paddingBottom: 36,
+    borderBottomLeftRadius: 32,
+    borderBottomRightRadius: 32,
+    gap: 22,
   },
-  headerTop: {
+  heroHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 8,
+    alignItems: 'flex-start',
   },
   greeting: {
     fontSize: 16,
-    color: 'rgba(255, 255, 255, 0.8)',
+    color: 'rgba(255,255,255,0.82)',
+    marginBottom: 6,
   },
-  userName: {
-    fontSize: 28,
-    fontWeight: 'bold',
+  heroTitle: {
+    fontSize: 24,
+    fontWeight: '700',
+    color: '#FFFFFF',
+    lineHeight: 30,
+  },
+  heroBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 999,
+    backgroundColor: 'rgba(255,255,255,0.18)',
+  },
+  heroBadgeText: {
+    fontSize: 12,
+    color: '#FFFFFF',
+    fontWeight: '600',
+  },
+  heroStats: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    gap: 16,
+  },
+  heroStatCard: {
+    flex: 1,
+    backgroundColor: 'rgba(255,255,255,0.18)',
+    borderRadius: 18,
+    padding: 16,
+  },
+  heroStatValue: {
+    fontSize: 22,
+    fontWeight: '700',
     color: '#FFFFFF',
   },
-  notificationButton: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    backgroundColor: 'rgba(255, 255, 255, 0.2)',
-    justifyContent: 'center',
-    alignItems: 'center',
-    position: 'relative',
-  },
-  notificationBadge: {
-    position: 'absolute',
-    top: -2,
-    right: -2,
-    width: 18,
-    height: 18,
-    borderRadius: 9,
-    backgroundColor: '#EF4444',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  notificationBadgeText: {
-    fontSize: 10,
-    fontWeight: 'bold',
-    color: '#FFFFFF',
-  },
-  headerSubtitle: {
-    fontSize: 16,
-    color: 'rgba(255, 255, 255, 0.9)',
-    lineHeight: 22,
+  heroStatLabel: {
+    marginTop: 6,
+    fontSize: 12,
+    color: 'rgba(255,255,255,0.82)',
   },
   section: {
     paddingHorizontal: 24,
-    marginTop: 32,
+    paddingTop: 28,
   },
   sectionHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 16,
   },
   sectionTitle: {
     fontSize: 20,
-    fontWeight: 'bold',
-    color: '#1F2937',
-    marginBottom: 16,
+    fontWeight: '700',
+    color: colors.text,
   },
-  seeAllText: {
-    fontSize: 14,
-    color: '#3B82F6',
-    fontWeight: '500',
+  sectionSubtitle: {
+    marginTop: 6,
+    fontSize: 13,
+    color: colors.muted,
+    lineHeight: 18,
   },
-  quickActionsGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    justifyContent: 'space-between',
+  sectionLink: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: colors.primary,
+  },
+  quickActionsRow: {
+    paddingTop: 18,
+    paddingBottom: 6,
+    gap: 16,
   },
   quickActionCard: {
-    width: (width - 56) / 2,
-    borderRadius: 16,
-    padding: 20,
-    marginBottom: 16,
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 4,
-    },
-    shadowOpacity: 0.1,
-    shadowRadius: 12,
-    elevation: 6,
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+    width: 220,
+    borderRadius: 20,
+    padding: 1,
   },
   quickActionContent: {
-    flex: 1,
+    padding: 18,
+    gap: 14,
   },
-  quickActionIcon: {
-    marginBottom: 12,
+  quickIconWrapper: {
+    width: 44,
+    height: 44,
+    borderRadius: 12,
+    backgroundColor: 'rgba(255,255,255,0.25)',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   quickActionTitle: {
     fontSize: 16,
-    fontWeight: 'bold',
+    fontWeight: '700',
     color: '#FFFFFF',
-    marginBottom: 4,
   },
   quickActionSubtitle: {
     fontSize: 12,
-    color: 'rgba(255, 255, 255, 0.8)',
+    color: 'rgba(255,255,255,0.82)',
     lineHeight: 16,
   },
-  quickActionArrow: {
-    marginLeft: 8,
+  quickActionFooter: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 18,
+    paddingBottom: 16,
+  },
+  quickActionFooterText: {
+    fontSize: 13,
+    color: '#FFFFFF',
+    fontWeight: '600',
+  },
+  cardStack: {
+    gap: 16,
+    marginTop: 18,
   },
   appointmentCard: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 16,
-    marginBottom: 12,
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.05,
-    shadowRadius: 8,
-    elevation: 3,
+    backgroundColor: colors.surface,
+    borderRadius: 20,
+    padding: 20,
+    shadowColor: '#0F172A',
+    shadowOffset: {width: 0, height: 6},
+    shadowOpacity: 0.08,
+    shadowRadius: 12,
+    elevation: 5,
+    gap: 10,
+  },
+  appointmentStatus: {
     flexDirection: 'row',
-    overflow: 'hidden',
-  },
-  appointmentIndicator: {
-    width: 4,
-  },
-  appointmentContent: {
-    flex: 1,
-    padding: 16,
-  },
-  appointmentHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
-    marginBottom: 12,
-  },
-  appointmentType: {
-    fontSize: 12,
-    color: '#6B7280',
-    textTransform: 'uppercase',
-    fontWeight: '500',
-    marginBottom: 2,
-  },
-  appointmentTitle: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    color: '#1F2937',
-    marginBottom: 2,
-  },
-  appointmentDoctor: {
-    fontSize: 14,
-    color: '#3B82F6',
-    fontWeight: '500',
-  },
-  statusBadge: {
-    paddingHorizontal: 8,
-    paddingVertical: 4,
+    alignItems: 'center',
+    gap: 8,
+    alignSelf: 'flex-start',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
     borderRadius: 12,
   },
-  statusText: {
+  appointmentStatusText: {
     fontSize: 12,
     fontWeight: '600',
     textTransform: 'capitalize',
   },
-  appointmentDetails: {
+  appointmentTitle: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: colors.text,
+  },
+  appointmentProfessional: {
+    fontSize: 13,
+    color: colors.muted,
+  },
+  appointmentInfoRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
     gap: 8,
   },
-  appointmentDetailItem: {
+  appointmentInfoText: {
+    fontSize: 13,
+    color: colors.subsection,
+  },
+  wellbeingGrid: {
     flexDirection: 'row',
-    alignItems: 'center',
+    flexWrap: 'wrap',
+    gap: 16,
+    marginTop: 18,
   },
-  appointmentDetailText: {
-    marginLeft: 8,
-    fontSize: 14,
-    color: '#6B7280',
-  },
-  healthTipsContainer: {
-    flexDirection: 'row',
-    paddingRight: 24,
-  },
-  healthTipCard: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 16,
-    padding: 20,
-    marginRight: 16,
-    width: 160,
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.05,
-    shadowRadius: 8,
+  wellbeingCard: {
+    flexBasis: '48%',
+    borderRadius: 18,
+    padding: 18,
+    gap: 10,
+    shadowColor: '#0F172A',
+    shadowOffset: {width: 0, height: 4},
+    shadowOpacity: 0.04,
+    shadowRadius: 10,
     elevation: 3,
   },
-  healthTipIcon: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
+  iconBadge: {
+    alignSelf: 'flex-start',
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 999,
+  },
+  wellbeingTitle: {
+    fontSize: 15,
+    fontWeight: '700',
+  },
+  wellbeingDescription: {
+    fontSize: 13,
+    lineHeight: 18,
+  },
+  tipList: {
+    marginTop: 18,
+    gap: 14,
+  },
+  tipCard: {
+    flexDirection: 'row',
+    gap: 14,
+    padding: 16,
+    backgroundColor: colors.surface,
+    borderRadius: 18,
+    shadowColor: '#0F172A',
+    shadowOffset: {width: 0, height: 4},
+    shadowOpacity: 0.06,
+    shadowRadius: 12,
+    elevation: 4,
+  },
+  tipIconWrapper: {
+    width: 44,
+    height: 44,
+    borderRadius: 12,
+    backgroundColor: '#E2E8F0',
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 12,
   },
-  healthTipTitle: {
-    fontSize: 14,
-    fontWeight: 'bold',
-    color: '#1F2937',
-    marginBottom: 4,
+  tipTextContainer: {
+    flex: 1,
+    gap: 6,
   },
-  healthTipText: {
-    fontSize: 12,
-    color: '#6B7280',
-    lineHeight: 16,
+  tipTitle: {
+    fontSize: 15,
+    fontWeight: '700',
+    color: colors.text,
   },
-  bottomSpacing: {
-    height: 32,
+  tipDescription: {
+    fontSize: 13,
+    color: colors.subsection,
+    lineHeight: 18,
   },
 });
 

@@ -1,4 +1,4 @@
-import React, {useState} from 'react';
+import React, {useMemo, useState} from 'react';
 import {
   View,
   Text,
@@ -6,591 +6,626 @@ import {
   ScrollView,
   TouchableOpacity,
   Alert,
-  Dimensions,
 } from 'react-native';
+import {LinearGradient} from 'expo-linear-gradient';
 import {MaterialIcons} from '@expo/vector-icons';
 
-const {width} = Dimensions.get('window');
+import {colors, gradients} from '../../theme/colors';
+
+type ServiceId = 'consulta' | 'exame' | 'procedimento';
+
+type ServiceOption = {
+  id: ServiceId;
+  title: string;
+  subtitle: string;
+  icon: keyof typeof MaterialIcons.glyphMap;
+  gradient: string[];
+};
+
+type HospitalOption = {
+  id: string;
+  name: string;
+  distance: string;
+  rating: number;
+  address: string;
+};
+
+const services: ServiceOption[] = [
+  {
+    id: 'consulta',
+    title: 'Consulta médica',
+    subtitle: 'Atendimento com especialistas',
+    icon: 'medical-services',
+    gradient: gradients.primary,
+  },
+  {
+    id: 'exame',
+    title: 'Exames e diagnósticos',
+    subtitle: 'Laboratório e imagem com agilidade',
+    icon: 'biotech',
+    gradient: ['#1CB09A', '#119B84'],
+  },
+  {
+    id: 'procedimento',
+    title: 'Procedimentos clínicos',
+    subtitle: 'Tratamentos e pequenas cirurgias',
+    icon: 'healing',
+    gradient: ['#6650F2', '#4C3BD6'],
+  },
+];
+
+const hospitals: HospitalOption[] = [
+  {
+    id: '1',
+    name: 'Hospital São Lucas',
+    distance: '2.3 km',
+    rating: 4.5,
+    address: 'Rua das Flores, 123',
+  },
+  {
+    id: '2',
+    name: 'Hospital Santa Maria',
+    distance: '3.1 km',
+    rating: 4.2,
+    address: 'Av. Principal, 456',
+  },
+  {
+    id: '3',
+    name: 'Clínica Vida Nova',
+    distance: '1.8 km',
+    rating: 4.0,
+    address: 'Rua da Saúde, 789',
+  },
+];
+
+const availableDates = ['2025-09-25', '2025-09-26', '2025-09-27', '2025-09-30', '2025-10-01'];
+
+const availableTimes = ['08:00', '09:00', '10:00', '11:00', '14:00', '15:00', '16:00', '17:00'];
+
+const formatDate = (isoDate: string) => {
+  const date = new Date(isoDate);
+  const today = new Date();
+  const tomorrow = new Date(today);
+  tomorrow.setDate(today.getDate() + 1);
+
+  if (date.toDateString() === today.toDateString()) {
+    return 'Hoje';
+  }
+  if (date.toDateString() === tomorrow.toDateString()) {
+    return 'Amanhã';
+  }
+
+  return new Intl.DateTimeFormat('pt-BR', {
+    weekday: 'short',
+    day: '2-digit',
+    month: 'short',
+  }).format(date);
+};
+
+const getLongDate = (isoDate: string) =>
+  new Intl.DateTimeFormat('pt-BR', {
+    weekday: 'long',
+    day: '2-digit',
+    month: 'long',
+    year: 'numeric',
+  }).format(new Date(isoDate));
 
 const BookingScreen = () => {
-  const [selectedService, setSelectedService] = useState('');
-  const [selectedHospital, setSelectedHospital] = useState('');
-  const [selectedDate, setSelectedDate] = useState('');
-  const [selectedTime, setSelectedTime] = useState('');
+  const [selectedService, setSelectedService] = useState<ServiceId | null>(null);
+  const [selectedHospital, setSelectedHospital] = useState<HospitalOption['id'] | null>(null);
+  const [selectedDate, setSelectedDate] = useState<string | null>(null);
+  const [selectedTime, setSelectedTime] = useState<string | null>(null);
 
-  const services = [
-    {
-      id: 'consulta',
-      title: 'Consulta Médica',
-      subtitle: 'Atendimento com especialistas',
-      icon: 'medical-services',
-      color: '#3B82F6',
-    },
-    {
-      id: 'exame',
-      title: 'Exame',
-      subtitle: 'Laboratório e diagnóstico',
-      icon: 'assignment',
-      color: '#10B981',
-    },
-    {
-      id: 'procedimento',
-      title: 'Procedimento',
-      subtitle: 'Cirurgias e tratamentos',
-      icon: 'local-hospital',
-      color: '#8B5CF6',
-    },
-  ];
-
-  const hospitals = [
-    {
-      id: '1', 
-      name: 'Hospital São Lucas', 
-      distance: '2.3 km',
-      rating: 4.5,
-      address: 'Rua das Flores, 123'
-    },
-    {
-      id: '2', 
-      name: 'Hospital Santa Maria', 
-      distance: '3.1 km',
-      rating: 4.2,
-      address: 'Av. Principal, 456'
-    },
-    {
-      id: '3', 
-      name: 'Clínica Vida Nova', 
-      distance: '1.8 km',
-      rating: 4.0,
-      address: 'Rua da Saúde, 789'
-    },
-  ];
-
-  const availableDates = [
-    '2025-09-25',
-    '2025-09-26',
-    '2025-09-27',
-    '2025-09-30',
-    '2025-10-01',
-  ];
-
-  const availableTimes = [
-    '08:00', '09:00', '10:00', '11:00',
-    '14:00', '15:00', '16:00', '17:00',
-  ];
-
-  const formatDate = (dateString: string) => {
-    const date = new Date(dateString);
-    const today = new Date();
-    const tomorrow = new Date(today);
-    tomorrow.setDate(tomorrow.getDate() + 1);
-
-    if (date.toDateString() === today.toDateString()) {
-      return 'Hoje';
-    } else if (date.toDateString() === tomorrow.toDateString()) {
-      return 'Amanhã';
-    } else {
-      return date.toLocaleDateString('pt-BR', {
-        weekday: 'short',
-        day: '2-digit',
-        month: 'short',
-      });
-    }
-  };
-
-  const handleBooking = () => {
-    if (!selectedService || !selectedHospital || !selectedDate || !selectedTime) {
-      Alert.alert('Erro', 'Por favor, preencha todos os campos');
-      return;
-    }
-
-    Alert.alert(
-      'Agendamento Confirmado! 🎉',
-      'Seu agendamento foi realizado com sucesso. Você receberá uma confirmação por email.',
-      [
-        {
-          text: 'OK',
-          onPress: () => {
-            setSelectedService('');
-            setSelectedHospital('');
-            setSelectedDate('');
-            setSelectedTime('');
-          },
-        },
-      ]
-    );
-  };
-
-  const getStepNumber = () => {
+  const stepProgress = useMemo(() => {
     if (!selectedService) return 1;
     if (!selectedHospital) return 2;
     if (!selectedDate) return 3;
     if (!selectedTime) return 4;
     return 5;
+  }, [selectedDate, selectedHospital, selectedService, selectedTime]);
+
+  const handleBooking = () => {
+    if (!selectedService || !selectedHospital || !selectedDate || !selectedTime) {
+      Alert.alert('Campos incompletos', 'Por favor, finalize as etapas do agendamento antes de confirmar.');
+      return;
+    }
+
+    Alert.alert('Agendamento confirmado', 'Você receberá os detalhes no seu e-mail cadastrado.', [
+      {
+        text: 'Concluir',
+        onPress: () => {
+          setSelectedService(null);
+          setSelectedHospital(null);
+          setSelectedDate(null);
+          setSelectedTime(null);
+        },
+      },
+    ]);
   };
 
   return (
-    <View style={styles.container}>
-      {/* Header */}
-      <View style={styles.header}>
-        <Text style={styles.headerTitle}>Novo Agendamento</Text>
-        <Text style={styles.headerSubtitle}>Siga os passos para agendar</Text>
-        
-        {/* Progress Indicator */}
-        <View style={styles.progressContainer}>
-          <View style={styles.progressBar}>
-            <View style={[styles.progressFill, {width: `${(getStepNumber() / 5) * 100}%`}]} />
+    <View style={styles.screen}>
+      <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+        <LinearGradient colors={gradients.primary} style={styles.heroBanner}>
+          <Text style={styles.heroEyebrow}>Novo agendamento</Text>
+          <Text style={styles.heroTitle}>Monte sua consulta, exame ou procedimento em cinco passos guiados.</Text>
+          <View style={styles.progressWrapper}>
+            <View style={styles.progressTrack}>
+              <View style={[styles.progressFill, {width: `${(stepProgress / 5) * 100}%`}]} />
+            </View>
+            <Text style={styles.progressLabel}>Passo {stepProgress} de 5</Text>
           </View>
-          <Text style={styles.progressText}>Passo {getStepNumber()} de 5</Text>
-        </View>
-      </View>
+          <View style={styles.stepperRow}>
+            {[1, 2, 3, 4, 5].map(step => (
+              <View
+                key={step}
+                style={[
+                  styles.stepPill,
+                  stepProgress >= step ? styles.stepPillActive : undefined,
+                ]}>
+                <Text
+                  style={[
+                    styles.stepPillText,
+                    stepProgress >= step ? styles.stepPillTextActive : undefined,
+                  ]}>
+                  {step}
+                </Text>
+              </View>
+            ))}
+          </View>
+        </LinearGradient>
 
-      <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
-        {/* Step 1: Service Type */}
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
-            <View style={[styles.stepNumber, selectedService && styles.stepNumberCompleted]}>
-              <Text style={[styles.stepNumberText, selectedService && styles.stepNumberTextCompleted]}>1</Text>
+            <View style={styles.sectionBadge}>
+              <Text style={styles.sectionBadgeText}>1</Text>
             </View>
             <Text style={styles.sectionTitle}>Escolha o tipo de serviço</Text>
           </View>
-          
-          <View style={styles.serviceGrid}>
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.serviceRow}>
             {services.map(service => (
-              <TouchableOpacity
-                key={service.id}
-                style={[
-                  styles.serviceCard,
-                  selectedService === service.id && styles.selectedServiceCard,
-                ]}
-                onPress={() => setSelectedService(service.id)}
-                activeOpacity={0.8}>
-                <View style={[styles.serviceIcon, {backgroundColor: `${service.color}20`}]}>
-                  <MaterialIcons name={service.icon} size={24} color={service.color} />
-                </View>
-                <Text style={styles.serviceTitle}>{service.title}</Text>
-                <Text style={styles.serviceSubtitle}>{service.subtitle}</Text>
-                {selectedService === service.id && (
-                  <View style={styles.checkIcon}>
-                    <MaterialIcons name="check-circle" size={20} color={service.color} />
+              <LinearGradient key={service.id} colors={service.gradient} style={styles.serviceCard}>
+                <TouchableOpacity
+                  style={[styles.serviceContent, selectedService === service.id && styles.serviceContentActive]}
+                  onPress={() => {
+                    setSelectedService(service.id);
+                    setSelectedHospital(null);
+                    setSelectedDate(null);
+                    setSelectedTime(null);
+                  }}
+                  activeOpacity={0.9}>
+                  <View style={styles.serviceIconWrapper}>
+                    <MaterialIcons name={service.icon} size={26} color="#FFFFFF" />
                   </View>
-                )}
-              </TouchableOpacity>
+                  <Text style={styles.serviceTitle}>{service.title}</Text>
+                  <Text style={styles.serviceSubtitle}>{service.subtitle}</Text>
+                  {selectedService === service.id && (
+                    <View style={styles.serviceCheck}>
+                      <MaterialIcons name="check-circle" size={20} color="#FFFFFF" />
+                    </View>
+                  )}
+                </TouchableOpacity>
+              </LinearGradient>
             ))}
-          </View>
+          </ScrollView>
         </View>
 
-        {/* Step 2: Hospital */}
         {selectedService && (
           <View style={styles.section}>
             <View style={styles.sectionHeader}>
-              <View style={[styles.stepNumber, selectedHospital && styles.stepNumberCompleted]}>
-                <Text style={[styles.stepNumberText, selectedHospital && styles.stepNumberTextCompleted]}>2</Text>
+              <View style={styles.sectionBadge}>
+                <Text style={styles.sectionBadgeText}>2</Text>
               </View>
-              <Text style={styles.sectionTitle}>Escolha o local</Text>
+              <Text style={styles.sectionTitle}>Selecione a unidade de atendimento</Text>
             </View>
-            
-            {hospitals.map(hospital => (
-              <TouchableOpacity
-                key={hospital.id}
-                style={[
-                  styles.hospitalCard,
-                  selectedHospital === hospital.id && styles.selectedHospitalCard,
-                ]}
-                onPress={() => setSelectedHospital(hospital.id)}
-                activeOpacity={0.8}>
-                <View style={styles.hospitalInfo}>
-                  <View style={styles.hospitalIcon}>
-                    <MaterialIcons name="local-hospital" size={20} color="#3B82F6" />
-                  </View>
-                  <View style={styles.hospitalDetails}>
-                    <Text style={styles.hospitalName}>{hospital.name}</Text>
-                    <Text style={styles.hospitalAddress}>{hospital.address}</Text>
-                    <View style={styles.hospitalMeta}>
-                      <View style={styles.ratingContainer}>
-                        <MaterialIcons name="star" size={14} color="#F59E0B" />
-                        <Text style={styles.rating}>{hospital.rating}</Text>
+            <View style={styles.hospitalList}>
+              {hospitals.map(hospital => {
+                const isActive = selectedHospital === hospital.id;
+                return (
+                  <TouchableOpacity
+                    key={hospital.id}
+                    style={[styles.hospitalCard, isActive && styles.hospitalCardActive]}
+                    onPress={() => {
+                      setSelectedHospital(hospital.id);
+                      setSelectedDate(null);
+                      setSelectedTime(null);
+                    }}
+                    activeOpacity={0.85}>
+                    <View style={styles.hospitalInfoRow}>
+                      <View style={styles.hospitalIcon}>
+                        <MaterialIcons name="local-hospital" size={20} color={colors.primary} />
                       </View>
-                      <Text style={styles.distance}>{hospital.distance}</Text>
+                      <View style={styles.hospitalTextGroup}>
+                        <Text style={styles.hospitalName}>{hospital.name}</Text>
+                        <Text style={styles.hospitalAddress}>{hospital.address}</Text>
+                        <View style={styles.hospitalMetaRow}>
+                          <View style={styles.ratingChip}>
+                            <MaterialIcons name="star" size={14} color={colors.warning} />
+                            <Text style={styles.ratingText}>{hospital.rating}</Text>
+                          </View>
+                          <Text style={styles.distanceText}>{hospital.distance}</Text>
+                        </View>
+                      </View>
                     </View>
-                  </View>
-                </View>
-                {selectedHospital === hospital.id && (
-                  <MaterialIcons name="check-circle" size={20} color="#3B82F6" />
-                )}
-              </TouchableOpacity>
-            ))}
+                    {isActive && <MaterialIcons name="check-circle" size={20} color={colors.primary} />}
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
           </View>
         )}
 
-        {/* Step 3: Date */}
         {selectedHospital && (
           <View style={styles.section}>
             <View style={styles.sectionHeader}>
-              <View style={[styles.stepNumber, selectedDate && styles.stepNumberCompleted]}>
-                <Text style={[styles.stepNumberText, selectedDate && styles.stepNumberTextCompleted]}>3</Text>
+              <View style={styles.sectionBadge}>
+                <Text style={styles.sectionBadgeText}>3</Text>
               </View>
-              <Text style={styles.sectionTitle}>Escolha a data</Text>
+              <Text style={styles.sectionTitle}>Defina a data da consulta</Text>
             </View>
-            
             <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-              <View style={styles.dateContainer}>
-                {availableDates.map(date => (
-                  <TouchableOpacity
-                    key={date}
-                    style={[
-                      styles.dateCard,
-                      selectedDate === date && styles.selectedDateCard,
-                    ]}
-                    onPress={() => setSelectedDate(date)}
-                    activeOpacity={0.8}>
-                    <Text style={[
-                      styles.dateLabel,
-                      selectedDate === date && styles.selectedDateLabel,
-                    ]}>
-                      {formatDate(date)}
-                    </Text>
-                    <Text style={[
-                      styles.dateNumber,
-                      selectedDate === date && styles.selectedDateNumber,
-                    ]}>
-                      {new Date(date).getDate()}
-                    </Text>
-                  </TouchableOpacity>
-                ))}
+              <View style={styles.dateRow}>
+                {availableDates.map(date => {
+                  const isActive = selectedDate === date;
+                  return (
+                    <TouchableOpacity
+                      key={date}
+                      style={[styles.dateCard, isActive && styles.dateCardActive]}
+                      onPress={() => {
+                        setSelectedDate(date);
+                        setSelectedTime(null);
+                      }}
+                      activeOpacity={0.85}>
+                      <Text style={[styles.dateLabel, isActive && styles.dateLabelActive]}>{formatDate(date)}</Text>
+                      <Text style={[styles.dateNumber, isActive && styles.dateNumberActive]}>
+                        {new Date(date).getDate()}
+                      </Text>
+                    </TouchableOpacity>
+                  );
+                })}
               </View>
             </ScrollView>
           </View>
         )}
 
-        {/* Step 4: Time */}
         {selectedDate && (
           <View style={styles.section}>
             <View style={styles.sectionHeader}>
-              <View style={[styles.stepNumber, selectedTime && styles.stepNumberCompleted]}>
-                <Text style={[styles.stepNumberText, selectedTime && styles.stepNumberTextCompleted]}>4</Text>
+              <View style={styles.sectionBadge}>
+                <Text style={styles.sectionBadgeText}>4</Text>
               </View>
-              <Text style={styles.sectionTitle}>Escolha o horário</Text>
+              <Text style={styles.sectionTitle}>Selecione o horário disponível</Text>
             </View>
-            
             <View style={styles.timeGrid}>
-              {availableTimes.map(time => (
-                <TouchableOpacity
-                  key={time}
-                  style={[
-                    styles.timeCard,
-                    selectedTime === time && styles.selectedTimeCard,
-                  ]}
-                  onPress={() => setSelectedTime(time)}
-                  activeOpacity={0.8}>
-                  <Text style={[
-                    styles.timeText,
-                    selectedTime === time && styles.selectedTimeText,
-                  ]}>
-                    {time}
-                  </Text>
-                </TouchableOpacity>
-              ))}
+              {availableTimes.map(time => {
+                const isActive = selectedTime === time;
+                return (
+                  <TouchableOpacity
+                    key={time}
+                    style={[styles.timeCard, isActive && styles.timeCardActive]}
+                    onPress={() => setSelectedTime(time)}
+                    activeOpacity={0.85}>
+                    <MaterialIcons
+                      name="schedule"
+                      size={18}
+                      color={isActive ? colors.primary : colors.subsection}
+                    />
+                    <Text style={[styles.timeText, isActive && styles.timeTextActive]}>{time}</Text>
+                  </TouchableOpacity>
+                );
+              })}
             </View>
           </View>
         )}
 
-        {/* Step 5: Summary */}
-        {selectedTime && (
+        {selectedTime && selectedDate && selectedHospital && selectedService && (
           <View style={styles.section}>
             <View style={styles.sectionHeader}>
-              <View style={[styles.stepNumber, styles.stepNumberCompleted]}>
-                <Text style={[styles.stepNumberText, styles.stepNumberTextCompleted]}>5</Text>
+              <View style={styles.sectionBadge}>
+                <Text style={styles.sectionBadgeText}>5</Text>
               </View>
-              <Text style={styles.sectionTitle}>Confirme os detalhes</Text>
+              <Text style={styles.sectionTitle}>Revise antes de confirmar</Text>
             </View>
-            
             <View style={styles.summaryCard}>
               <View style={styles.summaryHeader}>
-                <MaterialIcons name="event" size={24} color="#3B82F6" />
-                <Text style={styles.summaryTitle}>Resumo do Agendamento</Text>
+                <MaterialIcons name="event" size={22} color={colors.primary} />
+                <Text style={styles.summaryTitle}>Resumo do agendamento</Text>
               </View>
-              
-              <View style={styles.summaryContent}>
+              <View style={styles.summaryList}>
                 <View style={styles.summaryRow}>
-                  <Text style={styles.summaryLabel}>Serviço:</Text>
+                  <Text style={styles.summaryLabel}>Serviço</Text>
                   <Text style={styles.summaryValue}>
-                    {services.find(s => s.id === selectedService)?.title}
+                    {services.find(service => service.id === selectedService)?.title}
                   </Text>
                 </View>
                 <View style={styles.summaryRow}>
-                  <Text style={styles.summaryLabel}>Local:</Text>
+                  <Text style={styles.summaryLabel}>Local</Text>
                   <Text style={styles.summaryValue}>
-                    {hospitals.find(h => h.id === selectedHospital)?.name}
+                    {hospitals.find(hospital => hospital.id === selectedHospital)?.name}
                   </Text>
                 </View>
                 <View style={styles.summaryRow}>
-                  <Text style={styles.summaryLabel}>Data:</Text>
-                  <Text style={styles.summaryValue}>
-                    {new Date(selectedDate).toLocaleDateString('pt-BR', {
-                      weekday: 'long',
-                      year: 'numeric',
-                      month: 'long',
-                      day: 'numeric',
-                    })}
-                  </Text>
+                  <Text style={styles.summaryLabel}>Data</Text>
+                  <Text style={styles.summaryValue}>{getLongDate(selectedDate)}</Text>
                 </View>
                 <View style={styles.summaryRow}>
-                  <Text style={styles.summaryLabel}>Horário:</Text>
+                  <Text style={styles.summaryLabel}>Horário</Text>
                   <Text style={styles.summaryValue}>{selectedTime}</Text>
                 </View>
               </View>
             </View>
 
-            <TouchableOpacity style={styles.confirmButton} onPress={handleBooking}>
+            <TouchableOpacity style={styles.confirmButton} onPress={handleBooking} activeOpacity={0.9}>
               <MaterialIcons name="check" size={20} color="#FFFFFF" />
-              <Text style={styles.confirmButtonText}>Confirmar Agendamento</Text>
+              <Text style={styles.confirmButtonText}>Confirmar agendamento</Text>
             </TouchableOpacity>
           </View>
         )}
-
-        <View style={styles.bottomSpacing} />
       </ScrollView>
     </View>
   );
 };
 
 const styles = StyleSheet.create({
-  container: {
+  screen: {
     flex: 1,
-    backgroundColor: '#F8FAFC',
+    backgroundColor: colors.background,
   },
-  header: {
-    backgroundColor: '#3B82F6',
-    paddingTop: 50,
+  scrollContent: {
+    paddingBottom: 90,
+  },
+  heroBanner: {
     paddingHorizontal: 24,
-    paddingBottom: 24,
+    paddingTop: 48,
+    paddingBottom: 32,
+    borderBottomLeftRadius: 32,
+    borderBottomRightRadius: 32,
+    gap: 20,
   },
-  headerTitle: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: '#FFFFFF',
-    marginBottom: 4,
-  },
-  headerSubtitle: {
+  heroEyebrow: {
     fontSize: 14,
-    color: 'rgba(255, 255, 255, 0.8)',
-    marginBottom: 20,
+    color: 'rgba(255,255,255,0.8)',
+    fontWeight: '600',
   },
-  progressContainer: {
-    alignItems: 'center',
+  heroTitle: {
+    fontSize: 22,
+    fontWeight: '700',
+    color: '#FFFFFF',
+    lineHeight: 28,
   },
-  progressBar: {
+  progressWrapper: {
+    gap: 8,
+  },
+  progressTrack: {
     width: '100%',
-    height: 4,
-    backgroundColor: 'rgba(255, 255, 255, 0.3)',
-    borderRadius: 2,
-    marginBottom: 8,
+    height: 6,
+    backgroundColor: 'rgba(255,255,255,0.18)',
+    borderRadius: 999,
   },
   progressFill: {
     height: '100%',
     backgroundColor: '#FFFFFF',
-    borderRadius: 2,
+    borderRadius: 999,
   },
-  progressText: {
+  progressLabel: {
     fontSize: 12,
-    color: 'rgba(255, 255, 255, 0.8)',
+    color: 'rgba(255,255,255,0.82)',
+    fontWeight: '500',
   },
-  content: {
-    flex: 1,
+  stepperRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    gap: 10,
+  },
+  stepPill: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.4)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  stepPillActive: {
+    backgroundColor: '#FFFFFF',
+  },
+  stepPillText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: 'rgba(255,255,255,0.8)',
+  },
+  stepPillTextActive: {
+    color: colors.primaryDark,
   },
   section: {
     paddingHorizontal: 24,
-    paddingVertical: 24,
+    paddingTop: 28,
+    gap: 18,
   },
   sectionHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 20,
-  },
-  stepNumber: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    backgroundColor: '#E5E7EB',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: 12,
-  },
-  stepNumberCompleted: {
-    backgroundColor: '#10B981',
-  },
-  stepNumberText: {
-    fontSize: 14,
-    fontWeight: 'bold',
-    color: '#6B7280',
-  },
-  stepNumberTextCompleted: {
-    color: '#FFFFFF',
-  },
-  sectionTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#1F2937',
-  },
-  serviceGrid: {
     gap: 12,
   },
-  serviceCard: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 16,
-    padding: 20,
-    borderWidth: 2,
-    borderColor: '#E5E7EB',
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.05,
-    shadowRadius: 8,
-    elevation: 3,
-    position: 'relative',
-  },
-  selectedServiceCard: {
-    borderColor: '#3B82F6',
-    backgroundColor: '#EFF6FF',
-  },
-  serviceIcon: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
+  sectionBadge: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: '#E0F2FE',
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 12,
+  },
+  sectionBadgeText: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: colors.primary,
+  },
+  sectionTitle: {
+    flex: 1,
+    fontSize: 18,
+    fontWeight: '700',
+    color: colors.text,
+  },
+  serviceRow: {
+    gap: 16,
+    paddingRight: 10,
+  },
+  serviceCard: {
+    width: 240,
+    borderRadius: 22,
+    padding: 1,
+    shadowColor: '#0F172A',
+    shadowOffset: {width: 0, height: 8},
+    shadowOpacity: 0.12,
+    shadowRadius: 16,
+    elevation: 6,
+  },
+  serviceContent: {
+    backgroundColor: 'rgba(255,255,255,0.2)',
+    borderRadius: 22,
+    padding: 18,
+    gap: 14,
+    minHeight: 180,
+  },
+  serviceContentActive: {
+    backgroundColor: 'rgba(255,255,255,0.32)',
+  },
+  serviceIconWrapper: {
+    width: 48,
+    height: 48,
+    borderRadius: 16,
+    backgroundColor: 'rgba(255,255,255,0.25)',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   serviceTitle: {
     fontSize: 16,
-    fontWeight: 'bold',
-    color: '#1F2937',
-    marginBottom: 4,
+    fontWeight: '700',
+    color: '#FFFFFF',
   },
   serviceSubtitle: {
-    fontSize: 14,
-    color: '#6B7280',
+    fontSize: 12,
+    color: 'rgba(255,255,255,0.85)',
+    lineHeight: 16,
   },
-  checkIcon: {
+  serviceCheck: {
     position: 'absolute',
     top: 16,
     right: 16,
   },
+  hospitalList: {
+    gap: 14,
+  },
   hospitalCard: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 16,
-    padding: 16,
-    marginBottom: 12,
-    borderWidth: 2,
-    borderColor: '#E5E7EB',
+    backgroundColor: colors.surface,
+    borderRadius: 18,
+    padding: 18,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.05,
-    shadowRadius: 8,
-    elevation: 3,
+    gap: 16,
+    shadowColor: '#0F172A',
+    shadowOffset: {width: 0, height: 6},
+    shadowOpacity: 0.08,
+    shadowRadius: 16,
+    elevation: 5,
   },
-  selectedHospitalCard: {
-    borderColor: '#3B82F6',
-    backgroundColor: '#EFF6FF',
+  hospitalCardActive: {
+    borderWidth: 2,
+    borderColor: colors.primary,
   },
-  hospitalInfo: {
+  hospitalInfoRow: {
     flexDirection: 'row',
-    alignItems: 'center',
+    gap: 14,
     flex: 1,
   },
   hospitalIcon: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: '#EFF6FF',
+    width: 44,
+    height: 44,
+    borderRadius: 12,
+    backgroundColor: '#E0F2FE',
     justifyContent: 'center',
     alignItems: 'center',
-    marginRight: 12,
   },
-  hospitalDetails: {
+  hospitalTextGroup: {
     flex: 1,
+    gap: 6,
   },
   hospitalName: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    color: '#1F2937',
-    marginBottom: 2,
+    fontSize: 15,
+    fontWeight: '700',
+    color: colors.text,
   },
   hospitalAddress: {
-    fontSize: 12,
-    color: '#6B7280',
-    marginBottom: 4,
+    fontSize: 13,
+    color: colors.muted,
   },
-  hospitalMeta: {
+  hospitalMetaRow: {
     flexDirection: 'row',
-    alignItems: 'center',
     gap: 12,
-  },
-  ratingContainer: {
-    flexDirection: 'row',
     alignItems: 'center',
   },
-  rating: {
-    fontSize: 12,
-    color: '#6B7280',
-    marginLeft: 2,
-  },
-  distance: {
-    fontSize: 12,
-    color: '#3B82F6',
-    fontWeight: '500',
-  },
-  dateContainer: {
+  ratingChip: {
     flexDirection: 'row',
-    paddingRight: 24,
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: '#FEF3C7',
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 12,
+  },
+  ratingText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#B45309',
+  },
+  distanceText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: colors.primary,
+  },
+  dateRow: {
+    flexDirection: 'row',
+    gap: 14,
+    paddingRight: 20,
   },
   dateCard: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 12,
-    padding: 16,
-    marginRight: 12,
+    width: 92,
+    borderRadius: 18,
+    backgroundColor: colors.surface,
+    paddingVertical: 14,
     alignItems: 'center',
-    minWidth: 80,
-    borderWidth: 2,
-    borderColor: '#E5E7EB',
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.05,
-    shadowRadius: 8,
+    gap: 6,
+    shadowColor: '#0F172A',
+    shadowOffset: {width: 0, height: 4},
+    shadowOpacity: 0.06,
+    shadowRadius: 12,
     elevation: 3,
   },
-  selectedDateCard: {
-    backgroundColor: '#3B82F6',
-    borderColor: '#3B82F6',
+  dateCardActive: {
+    backgroundColor: '#E0F2FE',
+    borderWidth: 2,
+    borderColor: colors.primary,
   },
   dateLabel: {
     fontSize: 12,
-    color: '#6B7280',
-    marginBottom: 4,
+    color: colors.muted,
     textTransform: 'capitalize',
   },
-  selectedDateLabel: {
-    color: 'rgba(255, 255, 255, 0.8)',
+  dateLabelActive: {
+    color: colors.primaryDark,
+    fontWeight: '700',
   },
   dateNumber: {
     fontSize: 18,
-    fontWeight: 'bold',
-    color: '#1F2937',
+    fontWeight: '700',
+    color: colors.subsection,
   },
-  selectedDateNumber: {
-    color: '#FFFFFF',
+  dateNumberActive: {
+    color: colors.primaryDark,
   },
   timeGrid: {
     flexDirection: 'row',
@@ -598,104 +633,91 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   timeCard: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 12,
-    paddingVertical: 12,
-    paddingHorizontal: 16,
-    borderWidth: 2,
-    borderColor: '#E5E7EB',
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.05,
-    shadowRadius: 8,
-    elevation: 3,
-    minWidth: (width - 72) / 4,
+    flexDirection: 'row',
     alignItems: 'center',
+    gap: 8,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderRadius: 14,
+    backgroundColor: colors.surface,
+    shadowColor: '#0F172A',
+    shadowOffset: {width: 0, height: 4},
+    shadowOpacity: 0.06,
+    shadowRadius: 10,
+    elevation: 3,
   },
-  selectedTimeCard: {
-    backgroundColor: '#3B82F6',
-    borderColor: '#3B82F6',
+  timeCardActive: {
+    backgroundColor: '#E0F2FE',
+    borderWidth: 2,
+    borderColor: colors.primary,
   },
   timeText: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#1F2937',
+    color: colors.subsection,
   },
-  selectedTimeText: {
-    color: '#FFFFFF',
+  timeTextActive: {
+    color: colors.primaryDark,
   },
   summaryCard: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 16,
+    backgroundColor: colors.surface,
+    borderRadius: 22,
     padding: 20,
-    marginBottom: 24,
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.05,
-    shadowRadius: 8,
-    elevation: 3,
+    gap: 16,
+    shadowColor: '#0F172A',
+    shadowOffset: {width: 0, height: 8},
+    shadowOpacity: 0.08,
+    shadowRadius: 16,
+    elevation: 5,
   },
   summaryHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 16,
+    gap: 12,
   },
   summaryTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#1F2937',
-    marginLeft: 8,
+    fontSize: 16,
+    fontWeight: '700',
+    color: colors.text,
   },
-  summaryContent: {
+  summaryList: {
     gap: 12,
   },
   summaryRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'flex-start',
+    gap: 18,
   },
   summaryLabel: {
     fontSize: 14,
-    color: '#6B7280',
-    flex: 1,
+    color: colors.muted,
   },
   summaryValue: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#1F2937',
-    flex: 2,
+    color: colors.subsection,
     textAlign: 'right',
+    flex: 1,
   },
   confirmButton: {
-    backgroundColor: '#10B981',
-    borderRadius: 12,
-    paddingVertical: 16,
+    marginTop: 8,
+    backgroundColor: colors.primary,
+    borderRadius: 18,
+    paddingVertical: 14,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    shadowColor: '#10B981',
-    shadowOffset: {
-      width: 0,
-      height: 4,
-    },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
+    gap: 10,
+    shadowColor: '#0F172A',
+    shadowOffset: {width: 0, height: 6},
+    shadowOpacity: 0.12,
+    shadowRadius: 16,
     elevation: 6,
   },
   confirmButtonText: {
+    fontSize: 15,
+    fontWeight: '700',
     color: '#FFFFFF',
-    fontSize: 16,
-    fontWeight: 'bold',
-    marginLeft: 8,
-  },
-  bottomSpacing: {
-    height: 32,
   },
 });
 

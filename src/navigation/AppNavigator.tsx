@@ -1,8 +1,14 @@
 import React from 'react';
-import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
-import { createStackNavigator } from '@react-navigation/stack';
-import { useAuth } from '../context/AuthContext';
-import { Text } from 'react-native';
+import {createDrawerNavigator, DrawerHeaderProps} from '@react-navigation/drawer';
+import {createStackNavigator} from '@react-navigation/stack';
+import {createBottomTabNavigator} from '@react-navigation/bottom-tabs';
+import {MaterialIcons} from '@expo/vector-icons';
+import {View, TouchableOpacity} from 'react-native';
+
+import {useAuth} from '../context/AuthContext';
+import {colors} from '../theme/colors';
+import SidebarContent from '../components/navigation/SidebarContent';
+import HealthcareHeader from '../components/navigation/HealthcareHeader';
 
 // Screens
 import LoginScreen from '../screens/Auth/LoginScreen';
@@ -15,87 +21,165 @@ import ProfileScreen from '../screens/Profile/ProfileScreen';
 
 const Stack = createStackNavigator();
 const Tab = createBottomTabNavigator();
+const Drawer = createDrawerNavigator();
 
-// Componente simples para ícones usando emojis
-const SimpleIcon = ({ name, focused }: { name: string; focused: boolean }) => (
-  <Text style={{ 
-    fontSize: 20, 
-    color: focused ? '#2196F3' : '#757575',
-    fontWeight: focused ? 'bold' : 'normal'
-  }}>
-    {name === 'home' ? '🏠' : 
-     name === 'search' ? '🔍' : 
-     name === 'calendar' ? '📅' : 
-     name === 'list' ? '📋' : 
-     name === 'person' ? '👤' : '◯'}
-  </Text>
-);
+type IconName = keyof typeof MaterialIcons.glyphMap;
+
+interface ScreenHeaderConfig {
+  title: string;
+  subtitle?: string;
+  icon: IconName;
+  actionLabel?: string;
+  onActionPress?: () => void;
+  showBackButton?: boolean;
+  navigation?: any;
+}
+
+const buildScreenOptions = ({
+  title,
+  subtitle,
+  icon,
+  actionLabel,
+  onActionPress,
+  showBackButton,
+  navigation,
+}: ScreenHeaderConfig) => ({
+  header: (props: DrawerHeaderProps) => (
+    <HealthcareHeader
+      {...props}
+      title={title}
+      subtitle={subtitle}
+      actionLabel={actionLabel}
+      onActionPress={onActionPress}
+      showBackButton={showBackButton}
+      onBackPress={showBackButton && navigation ? () => navigation.goBack() : undefined}
+    />
+  ),
+  drawerIcon: ({color, size}: {color: string; size: number}) => (
+    <MaterialIcons name={icon} size={size} color={color} />
+  ),
+});
 
 const AuthNavigator = () => (
-  <Stack.Navigator screenOptions={{ headerShown: false }}>
+  <Stack.Navigator screenOptions={{headerShown: false}}>
     <Stack.Screen name="Login" component={LoginScreen} />
     <Stack.Screen name="Register" component={RegisterScreen} />
   </Stack.Navigator>
 );
 
-const MainNavigator = () => (
+const TabNavigator = () => (
   <Tab.Navigator
-    screenOptions={({ route }) => ({
+    screenOptions={{
       headerShown: false,
-      tabBarIcon: ({ focused }) => {
-        let iconName = '';
-        
-        if (route.name === 'Home') {
-          iconName = 'home';
-        } else if (route.name === 'Search') {
-          iconName = 'search';
-        } else if (route.name === 'Booking') {
-          iconName = 'calendar';
-        } else if (route.name === 'Appointments') {
-          iconName = 'list';
-        } else if (route.name === 'Profile') {
-          iconName = 'person';
-        }
-
-        return <SimpleIcon name={iconName} focused={focused} />;
+      tabBarActiveTintColor: colors.primary,
+      tabBarInactiveTintColor: colors.muted,
+      tabBarStyle: {
+        backgroundColor: colors.surface,
+        borderTopWidth: 1,
+        borderTopColor: '#E2E8F0',
+        height: 65,
+        paddingBottom: 8,
+        paddingTop: 8,
+        elevation: 8,
+        shadowColor: '#000',
+        shadowOffset: {width: 0, height: -2},
+        shadowOpacity: 0.1,
+        shadowRadius: 8,
       },
-      tabBarActiveTintColor: '#2196F3',
-      tabBarInactiveTintColor: '#757575',
-    })}
-  >
-    <Tab.Screen 
-      name="Home" 
+      tabBarLabelStyle: {
+        fontSize: 12,
+        fontWeight: '600',
+      },
+      tabBarIconStyle: {
+        marginTop: 4,
+      },
+    }}>
+    <Tab.Screen
+      name="HomeTab"
       component={HomeScreen}
-      options={{ tabBarLabel: 'Início' }}
+      options={{
+        tabBarLabel: 'Início',
+        tabBarIcon: ({color, size}) => <MaterialIcons name="home" size={size} color={color} />,
+      }}
     />
-    <Tab.Screen 
-      name="Search" 
+    <Tab.Screen
+      name="SearchTab"
       component={SearchScreen}
-      options={{ tabBarLabel: 'Buscar' }}
+      options={{
+        tabBarLabel: 'Buscar',
+        tabBarIcon: ({color, size}) => <MaterialIcons name="search" size={size} color={color} />,
+      }}
     />
-    <Tab.Screen 
-      name="Booking" 
+    <Tab.Screen
+      name="BookingTab"
       component={BookingScreen}
-      options={{ tabBarLabel: 'Agendar' }}
+      options={{
+        tabBarLabel: 'Agendar',
+        tabBarIcon: ({color, size}) => <MaterialIcons name="add-circle" size={size + 4} color={color} />,
+      }}
     />
-    <Tab.Screen 
-      name="Appointments" 
+    <Tab.Screen
+      name="AppointmentsTab"
       component={AppointmentsScreen}
-      options={{ tabBarLabel: 'Consultas' }}
+      options={{
+        tabBarLabel: 'Consultas',
+        tabBarIcon: ({color, size}) => <MaterialIcons name="calendar-today" size={size} color={color} />,
+      }}
     />
-    <Tab.Screen 
-      name="Profile" 
+    <Tab.Screen
+      name="ProfileTab"
       component={ProfileScreen}
-      options={{ tabBarLabel: 'Perfil' }}
+      options={{
+        tabBarLabel: 'Perfil',
+        tabBarIcon: ({color, size}) => <MaterialIcons name="person" size={size} color={color} />,
+      }}
     />
   </Tab.Navigator>
 );
 
+const MainNavigator = () => (
+  <Drawer.Navigator
+    initialRouteName="Main"
+    screenOptions={{
+      drawerType: 'slide',
+      headerShown: true,
+      sceneContainerStyle: {backgroundColor: colors.background},
+      drawerActiveTintColor: colors.primary,
+      drawerInactiveTintColor: colors.muted,
+      drawerLabelStyle: {
+        fontSize: 15,
+        fontWeight: '600',
+      },
+      drawerItemStyle: {
+        borderRadius: 12,
+        marginVertical: 6,
+      },
+      drawerStyle: {
+        width: 300,
+        backgroundColor: colors.surface,
+      },
+    }}
+    drawerContent={props => <SidebarContent {...props} />}>
+    <Drawer.Screen
+      name="Main"
+      component={TabNavigator}
+      options={({navigation}) =>
+        buildScreenOptions({
+          title: 'MediBook',
+          subtitle: 'Sua saúde em boas mãos',
+          icon: 'space-dashboard',
+          navigation,
+        })
+      }
+    />
+  </Drawer.Navigator>
+);
+
 const AppNavigator = () => {
-  const { user } = useAuth();
+  const {user} = useAuth();
 
   return user ? <MainNavigator /> : <AuthNavigator />;
 };
 
-export { AppNavigator };
+export {AppNavigator};
 export default AppNavigator;

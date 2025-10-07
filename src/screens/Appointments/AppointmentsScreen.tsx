@@ -1,4 +1,4 @@
-import React, {useState} from 'react';
+import React, {useMemo, useState} from 'react';
 import {
   View,
   Text,
@@ -6,15 +6,19 @@ import {
   ScrollView,
   TouchableOpacity,
   Alert,
-  Dimensions,
 } from 'react-native';
+import {LinearGradient} from 'expo-linear-gradient';
 import {MaterialIcons} from '@expo/vector-icons';
 
-const {width} = Dimensions.get('window');
+import {colors, gradients} from '../../theme/colors';
 
-interface Appointment {
+type AppointmentType = 'consulta' | 'exame' | 'procedimento';
+
+type AppointmentStatus = 'agendado' | 'confirmado' | 'cancelado' | 'realizado';
+
+type Appointment = {
   id: string;
-  type: 'consulta' | 'exame' | 'procedimento';
+  type: AppointmentType;
   title: string;
   doctor?: string;
   specialty?: string;
@@ -22,185 +26,218 @@ interface Appointment {
   time: string;
   hospital: string;
   address: string;
-  status: 'agendado' | 'confirmado' | 'cancelado' | 'realizado';
-}
+  status: AppointmentStatus;
+};
+
+type TabKey = 'proximos' | 'historico';
+
+type TypeVisual = {
+  icon: keyof typeof MaterialIcons.glyphMap;
+  color: string;
+  label: string;
+};
+
+type StatusVisual = {
+  color: string;
+  background: string;
+  label: string;
+};
+
+const typeVisuals: Record<AppointmentType, TypeVisual> = {
+  consulta: {
+    icon: 'medical-services',
+    color: colors.primary,
+    label: 'Consulta',
+  },
+  exame: {
+    icon: 'biotech',
+    color: colors.success,
+    label: 'Exame',
+  },
+  procedimento: {
+    icon: 'healing',
+    color: '#6C2BD9',
+    label: 'Procedimento',
+  },
+};
+
+const statusVisuals: Record<AppointmentStatus, StatusVisual> = {
+  agendado: {
+    color: colors.warning,
+    background: '#FEF3C7',
+    label: 'Agendado',
+  },
+  confirmado: {
+    color: colors.success,
+    background: '#D1FAE5',
+    label: 'Confirmado',
+  },
+  cancelado: {
+    color: colors.danger,
+    background: '#FEE2E2',
+    label: 'Cancelado',
+  },
+  realizado: {
+    color: colors.primary,
+    background: '#DBEAFE',
+    label: 'Realizado',
+  },
+};
+
+const appointmentsData: Appointment[] = [
+  {
+    id: '1',
+    type: 'consulta',
+    title: 'Consulta cardiológica',
+    doctor: 'Dr. João Silva',
+    specialty: 'Cardiologia',
+    date: '2025-09-25',
+    time: '14:30',
+    hospital: 'Hospital São Lucas',
+    address: 'Rua das Flores, 123',
+    status: 'confirmado',
+  },
+  {
+    id: '2',
+    type: 'exame',
+    title: 'Hemograma completo',
+    date: '2025-09-28',
+    time: '08:00',
+    hospital: 'Laboratório Diagnóstica',
+    address: 'Av. Principal, 456',
+    status: 'agendado',
+  },
+  {
+    id: '3',
+    type: 'consulta',
+    title: 'Consulta dermatológica',
+    doctor: 'Dra. Maria Santos',
+    specialty: 'Dermatologia',
+    date: '2025-09-15',
+    time: '10:00',
+    hospital: 'Clínica Vida Nova',
+    address: 'Rua da Saúde, 789',
+    status: 'realizado',
+  },
+  {
+    id: '4',
+    type: 'procedimento',
+    title: 'Microcirurgia ambulatorial',
+    doctor: 'Dr. Carlos Lima',
+    specialty: 'Cirurgia Geral',
+    date: '2025-08-20',
+    time: '09:00',
+    hospital: 'Hospital Central',
+    address: 'Av. Central, 100',
+    status: 'cancelado',
+  },
+];
+
+const formatDate = (isoDate: string) => {
+  const date = new Date(isoDate);
+  return new Intl.DateTimeFormat('pt-BR', {
+    weekday: 'short',
+    day: '2-digit',
+    month: 'short',
+  }).format(date);
+};
 
 const AppointmentsScreen = () => {
-  const [activeTab, setActiveTab] = useState<'proximos' | 'historico'>('proximos');
+  const [activeTab, setActiveTab] = useState<TabKey>('proximos');
 
-  const appointments: Appointment[] = [
-    {
-      id: '1',
-      type: 'consulta',
-      title: 'Consulta Cardiológica',
-      doctor: 'Dr. João Silva',
-      specialty: 'Cardiologia',
-      date: '2025-09-25',
-      time: '14:30',
-      hospital: 'Hospital São Lucas',
-      address: 'Rua das Flores, 123',
-      status: 'confirmado',
-    },
-    {
-      id: '2',
-      type: 'exame',
-      title: 'Hemograma Completo',
-      date: '2025-09-28',
-      time: '08:00',
-      hospital: 'Laboratório Diagnóstica',
-      address: 'Av. Principal, 456',
-      status: 'agendado',
-    },
-    {
-      id: '3',
-      type: 'consulta',
-      title: 'Consulta Dermatológica',
-      doctor: 'Dra. Maria Santos',
-      specialty: 'Dermatologia',
-      date: '2025-09-15',
-      time: '10:00',
-      hospital: 'Clínica Vida Nova',
-      address: 'Rua da Saúde, 789',
-      status: 'realizado',
-    },
-    {
-      id: '4',
-      type: 'procedimento',
-      title: 'Cirurgia Menor',
-      doctor: 'Dr. Carlos Lima',
-      specialty: 'Cirurgia Geral',
-      date: '2025-08-20',
-      time: '09:00',
-      hospital: 'Hospital Central',
-      address: 'Av. Central, 100',
-      status: 'cancelado',
-    },
-  ];
-
-  const proximosAgendamentos = appointments.filter(
-    app => app.status === 'agendado' || app.status === 'confirmado'
+  const upcomingAppointments = useMemo(
+    () =>
+      appointmentsData.filter(appointment =>
+        appointment.status === 'agendado' || appointment.status === 'confirmado',
+      ),
+    [],
   );
 
-  const historicoAgendamentos = appointments.filter(
-    app => app.status === 'realizado' || app.status === 'cancelado'
+  const historicalAppointments = useMemo(
+    () =>
+      appointmentsData.filter(appointment =>
+        appointment.status === 'realizado' || appointment.status === 'cancelado',
+      ),
+    [],
   );
-
-  const getStatusConfig = (status: string) => {
-    switch (status) {
-      case 'agendado':
-        return { color: '#F59E0B', bg: '#FEF3C7', text: 'Agendado' };
-      case 'confirmado':
-        return { color: '#10B981', bg: '#D1FAE5', text: 'Confirmado' };
-      case 'cancelado':
-        return { color: '#EF4444', bg: '#FEE2E2', text: 'Cancelado' };
-      case 'realizado':
-        return { color: '#3B82F6', bg: '#DBEAFE', text: 'Realizado' };
-      default:
-        return { color: '#6B7280', bg: '#F3F4F6', text: status };
-    }
-  };
-
-  const getTypeConfig = (type: string) => {
-    switch (type) {
-      case 'consulta':
-        return { icon: 'medical-services', color: '#3B82F6' };
-      case 'exame':
-        return { icon: 'assignment', color: '#10B981' };
-      case 'procedimento':
-        return { icon: 'local-hospital', color: '#8B5CF6' };
-      default:
-        return { icon: 'event', color: '#6B7280' };
-    }
-  };
-
-  const formatDate = (dateString: string) => {
-    const date = new Date(dateString);
-    return date.toLocaleDateString('pt-BR', {
-      weekday: 'short',
-      day: '2-digit',
-      month: 'short',
-    });
-  };
 
   const handleCancelAppointment = (appointmentId: string) => {
     Alert.alert(
-      'Cancelar Agendamento',
-      'Tem certeza que deseja cancelar este agendamento?',
+      'Cancelar agendamento',
+      'Tem certeza de que deseja cancelar este agendamento?',
       [
-        {text: 'Não', style: 'cancel'},
-        {text: 'Sim', onPress: () => console.log('Agendamento cancelado')},
-      ]
+        {text: 'Manter', style: 'cancel'},
+        {text: 'Cancelar', style: 'destructive', onPress: () => console.log('Cancelar', appointmentId)},
+      ],
     );
   };
 
   const renderAppointmentCard = (appointment: Appointment) => {
-    const statusConfig = getStatusConfig(appointment.status);
-    const typeConfig = getTypeConfig(appointment.type);
+    const typeConfig = typeVisuals[appointment.type];
+    const statusConfig = statusVisuals[appointment.status];
 
     return (
       <View key={appointment.id} style={styles.appointmentCard}>
         <View style={styles.cardHeader}>
-          <View style={styles.typeContainer}>
-            <View style={[styles.typeIcon, {backgroundColor: `${typeConfig.color}20`}]}>
-              <MaterialIcons
-                name={typeConfig.icon}
-                size={20}
-                color={typeConfig.color}
-              />
+          <View style={styles.cardTypeArea}>
+            <View style={[styles.typeBadge, {backgroundColor: `${typeConfig.color}1A`}]}>
+              <MaterialIcons name={typeConfig.icon} size={20} color={typeConfig.color} />
             </View>
-            <View style={styles.appointmentInfo}>
-              <Text style={styles.appointmentTitle}>{appointment.title}</Text>
-              {appointment.doctor && (
-                <Text style={styles.doctorName}>{appointment.doctor}</Text>
-              )}
-              {appointment.specialty && (
-                <Text style={styles.specialty}>{appointment.specialty}</Text>
-              )}
+            <View style={styles.cardTitleGroup}>
+              <Text style={styles.cardTitle}>{appointment.title}</Text>
+              <Text style={[styles.cardLabel, {color: typeConfig.color}]}>{typeConfig.label}</Text>
             </View>
           </View>
-          <View style={[styles.statusBadge, {backgroundColor: statusConfig.bg}]}>
-            <Text style={[styles.statusText, {color: statusConfig.color}]}>
-              {statusConfig.text}
-            </Text>
+          <View style={[styles.statusChip, {backgroundColor: statusConfig.background}]}>
+            <MaterialIcons name="event-available" size={16} color={statusConfig.color} />
+            <Text style={[styles.statusText, {color: statusConfig.color}]}>{statusConfig.label}</Text>
           </View>
         </View>
 
-        <View style={styles.cardDetails}>
-          <View style={styles.detailRow}>
-            <MaterialIcons name="today" size={16} color="#6B7280" />
-            <Text style={styles.detailText}>
-              {formatDate(appointment.date)} às {appointment.time}
+        <View style={styles.cardBody}>
+          {appointment.doctor && (
+            <View style={styles.infoRow}>
+              <MaterialIcons name="person-outline" size={16} color={colors.muted} />
+              <Text style={styles.infoText}>{appointment.doctor}</Text>
+            </View>
+          )}
+          {appointment.specialty && (
+            <View style={styles.infoRow}>
+              <MaterialIcons name="local-hospital" size={16} color={colors.muted} />
+              <Text style={styles.infoText}>{appointment.specialty}</Text>
+            </View>
+          )}
+          <View style={styles.infoRow}>
+            <MaterialIcons name="today" size={16} color={colors.muted} />
+            <Text style={styles.infoText}>
+              {formatDate(appointment.date)} · {appointment.time}
             </Text>
           </View>
-          <View style={styles.detailRow}>
-            <MaterialIcons name="location-on" size={16} color="#6B7280" />
-            <Text style={styles.detailText}>
-              {appointment.hospital}
-            </Text>
+          <View style={styles.infoRow}>
+            <MaterialIcons name="business" size={16} color={colors.muted} />
+            <Text style={styles.infoText}>{appointment.hospital}</Text>
           </View>
-          <View style={styles.detailRow}>
-            <MaterialIcons name="place" size={16} color="#6B7280" />
-            <Text style={styles.detailText}>
-              {appointment.address}
-            </Text>
+          <View style={styles.infoRow}>
+            <MaterialIcons name="place" size={16} color={colors.muted} />
+            <Text style={styles.infoText}>{appointment.address}</Text>
           </View>
         </View>
 
         {(appointment.status === 'agendado' || appointment.status === 'confirmado') && (
           <View style={styles.cardActions}>
             <TouchableOpacity style={styles.actionButton}>
-              <MaterialIcons name="edit" size={18} color="#3B82F6" />
-              <Text style={styles.actionText}>Reagendar</Text>
+              <MaterialIcons name="edit" size={18} color={colors.primary} />
+              <Text style={[styles.actionText, {color: colors.primary}]}>Reagendar</Text>
             </TouchableOpacity>
             <TouchableOpacity style={styles.actionButton}>
-              <MaterialIcons name="directions" size={18} color="#10B981" />
-              <Text style={[styles.actionText, {color: '#10B981'}]}>Direções</Text>
+              <MaterialIcons name="directions" size={18} color={colors.success} />
+              <Text style={[styles.actionText, {color: colors.success}]}>Direções</Text>
             </TouchableOpacity>
             <TouchableOpacity
-              style={[styles.actionButton, styles.cancelButton]}
+              style={styles.actionButton}
               onPress={() => handleCancelAppointment(appointment.id)}>
-              <MaterialIcons name="cancel" size={18} color="#EF4444" />
-              <Text style={[styles.actionText, styles.cancelText]}>Cancelar</Text>
+              <MaterialIcons name="cancel" size={18} color={colors.danger} />
+              <Text style={[styles.actionText, {color: colors.danger}]}>Cancelar</Text>
             </TouchableOpacity>
           </View>
         )}
@@ -208,293 +245,296 @@ const AppointmentsScreen = () => {
     );
   };
 
-  const renderEmptyState = (type: 'proximos' | 'historico') => (
+  const renderEmptyState = (tab: TabKey) => (
     <View style={styles.emptyState}>
-      <View style={styles.emptyIconContainer}>
-        <MaterialIcons 
-          name={type === 'proximos' ? 'event-available' : 'history'} 
-          size={64} 
-          color="#E5E7EB" 
+      <View style={styles.emptyIconWrapper}>
+        <MaterialIcons
+          name={tab === 'proximos' ? 'event-available' : 'history'}
+          size={56}
+          color="rgba(15,107,168,0.25)"
         />
       </View>
       <Text style={styles.emptyTitle}>
-        {type === 'proximos' ? 'Nenhum agendamento próximo' : 'Sem histórico'}
+        {tab === 'proximos' ? 'Nenhum compromisso próximo' : 'Sem registros anteriores'}
       </Text>
-      <Text style={styles.emptyText}>
-        {type === 'proximos' 
-          ? 'Você não tem consultas ou exames agendados'
-          : 'Você ainda não tem histórico de agendamentos'
-        }
+      <Text style={styles.emptyDescription}>
+        {tab === 'proximos'
+          ? 'Agende uma nova consulta ou exame para ver os detalhes aqui.'
+          : 'Quando finalizar um atendimento ele aparecerá nesta seção.'}
       </Text>
-      <TouchableOpacity style={styles.emptyButton}>
+      <TouchableOpacity style={styles.emptyButton} activeOpacity={0.85}>
         <Text style={styles.emptyButtonText}>Agendar agora</Text>
       </TouchableOpacity>
     </View>
   );
 
+  const activeList = activeTab === 'proximos' ? upcomingAppointments : historicalAppointments;
+
   return (
-    <View style={styles.container}>
-      {/* Header */}
-      <View style={styles.header}>
-        <Text style={styles.headerTitle}>Meus Agendamentos</Text>
-        <Text style={styles.headerSubtitle}>Gerencie suas consultas e exames</Text>
-      </View>
+    <View style={styles.screen}>
+      <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+        <LinearGradient colors={gradients.primary} style={styles.heroBanner}>
+          <Text style={styles.heroEyebrow}>Meus cuidados</Text>
+          <Text style={styles.heroTitle}>Acompanhe consultas, exames e procedimentos em um único lugar.</Text>
+          <View style={styles.heroHighlights}>
+            <View style={styles.highlightCard}>
+              <Text style={styles.highlightValue}>{upcomingAppointments.length}</Text>
+              <Text style={styles.highlightLabel}>Agendamentos ativos</Text>
+            </View>
+            <View style={styles.highlightCard}>
+              <Text style={styles.highlightValue}>{historicalAppointments.length}</Text>
+              <Text style={styles.highlightLabel}>Registros anteriores</Text>
+            </View>
+          </View>
+        </LinearGradient>
 
-      {/* Tabs */}
-      <View style={styles.tabContainer}>
-        <TouchableOpacity
-          style={[styles.tab, activeTab === 'proximos' && styles.activeTab]}
-          onPress={() => setActiveTab('proximos')}>
-          <MaterialIcons 
-            name="schedule" 
-            size={20} 
-            color={activeTab === 'proximos' ? '#3B82F6' : '#6B7280'} 
-          />
-          <Text style={[styles.tabText, activeTab === 'proximos' && styles.activeTabText]}>
-            Próximos ({proximosAgendamentos.length})
-          </Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={[styles.tab, activeTab === 'historico' && styles.activeTab]}
-          onPress={() => setActiveTab('historico')}>
-          <MaterialIcons 
-            name="history" 
-            size={20} 
-            color={activeTab === 'historico' ? '#3B82F6' : '#6B7280'} 
-          />
-          <Text style={[styles.tabText, activeTab === 'historico' && styles.activeTabText]}>
-            Histórico ({historicoAgendamentos.length})
-          </Text>
-        </TouchableOpacity>
-      </View>
+        <View style={styles.tabBar}>
+          {(['proximos', 'historico'] as TabKey[]).map(tabKey => (
+            <TouchableOpacity
+              key={tabKey}
+              style={[styles.tabButton, activeTab === tabKey && styles.tabButtonActive]}
+              onPress={() => setActiveTab(tabKey)}
+              activeOpacity={0.85}>
+              <MaterialIcons
+                name={tabKey === 'proximos' ? 'schedule' : 'history'}
+                size={18}
+                color={activeTab === tabKey ? '#FFFFFF' : colors.subsection}
+              />
+              <Text style={[styles.tabLabel, activeTab === tabKey && styles.tabLabelActive]}>
+                {tabKey === 'proximos'
+                  ? `Próximos (${upcomingAppointments.length})`
+                  : `Histórico (${historicalAppointments.length})`}
+              </Text>
+            </TouchableOpacity>
+          ))}
+        </View>
 
-      {/* Content */}
-      <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
-        {activeTab === 'proximos' ? (
-          proximosAgendamentos.length > 0 ? (
-            proximosAgendamentos.map(renderAppointmentCard)
-          ) : (
-            renderEmptyState('proximos')
-          )
-        ) : (
-          historicoAgendamentos.length > 0 ? (
-            historicoAgendamentos.map(renderAppointmentCard)
-          ) : (
-            renderEmptyState('historico')
-          )
-        )}
-        <View style={styles.bottomSpacing} />
+        <View style={styles.listArea}>
+          {activeList.length > 0
+            ? activeList.map(renderAppointmentCard)
+            : renderEmptyState(activeTab)}
+        </View>
       </ScrollView>
     </View>
   );
 };
 
 const styles = StyleSheet.create({
-  container: {
+  screen: {
     flex: 1,
-    backgroundColor: '#F8FAFC',
+    backgroundColor: colors.background,
   },
-  header: {
-    backgroundColor: '#3B82F6',
-    paddingTop: 50,
+  scrollContent: {
+    paddingBottom: 90,
+  },
+  heroBanner: {
     paddingHorizontal: 24,
-    paddingBottom: 24,
+    paddingTop: 48,
+    paddingBottom: 36,
+    borderBottomLeftRadius: 32,
+    borderBottomRightRadius: 32,
+    gap: 18,
   },
-  headerTitle: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: '#FFFFFF',
-    marginBottom: 4,
-  },
-  headerSubtitle: {
+  heroEyebrow: {
     fontSize: 14,
-    color: 'rgba(255, 255, 255, 0.8)',
+    color: 'rgba(255,255,255,0.82)',
+    fontWeight: '600',
   },
-  tabContainer: {
+  heroTitle: {
+    fontSize: 22,
+    fontWeight: '700',
+    color: '#FFFFFF',
+    lineHeight: 28,
+  },
+  heroHighlights: {
     flexDirection: 'row',
-    backgroundColor: '#FFFFFF',
-    marginHorizontal: 24,
-    marginTop: -12,
-    borderRadius: 12,
-    padding: 4,
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-    elevation: 4,
+    gap: 16,
   },
-  tab: {
+  highlightCard: {
+    flex: 1,
+    backgroundColor: 'rgba(255,255,255,0.18)',
+    borderRadius: 18,
+    padding: 18,
+  },
+  highlightValue: {
+    fontSize: 20,
+    fontWeight: '700',
+    color: '#FFFFFF',
+  },
+  highlightLabel: {
+    marginTop: 6,
+    fontSize: 12,
+    color: 'rgba(255,255,255,0.82)',
+  },
+  tabBar: {
+    flexDirection: 'row',
+    marginHorizontal: 24,
+    marginTop: -18,
+    backgroundColor: colors.surface,
+    borderRadius: 18,
+    padding: 6,
+    shadowColor: '#0F172A',
+    shadowOffset: {width: 0, height: 10},
+    shadowOpacity: 0.08,
+    shadowRadius: 20,
+    elevation: 6,
+  },
+  tabButton: {
     flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
+    gap: 8,
     paddingVertical: 12,
-    paddingHorizontal: 16,
-    borderRadius: 8,
+    borderRadius: 14,
   },
-  activeTab: {
-    backgroundColor: '#EFF6FF',
+  tabButtonActive: {
+    backgroundColor: colors.primary,
   },
-  tabText: {
-    fontSize: 14,
-    color: '#6B7280',
-    fontWeight: '500',
-    marginLeft: 8,
-  },
-  activeTabText: {
-    color: '#3B82F6',
+  tabLabel: {
+    fontSize: 13,
     fontWeight: '600',
+    color: colors.subsection,
   },
-  content: {
-    flex: 1,
+  tabLabelActive: {
+    color: '#FFFFFF',
+  },
+  listArea: {
     paddingHorizontal: 24,
-    paddingTop: 24,
+    paddingTop: 28,
+    gap: 18,
   },
   appointmentCard: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 16,
+    backgroundColor: colors.surface,
+    borderRadius: 22,
     padding: 20,
-    marginBottom: 16,
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.05,
-    shadowRadius: 8,
-    elevation: 3,
+    shadowColor: '#0F172A',
+    shadowOffset: {width: 0, height: 8},
+    shadowOpacity: 0.08,
+    shadowRadius: 16,
+    elevation: 5,
+    gap: 16,
   },
   cardHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'flex-start',
-    marginBottom: 16,
+    alignItems: 'center',
   },
-  typeContainer: {
+  cardTypeArea: {
     flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
     flex: 1,
-    marginRight: 12,
   },
-  typeIcon: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
+  typeBadge: {
+    width: 44,
+    height: 44,
+    borderRadius: 12,
     justifyContent: 'center',
     alignItems: 'center',
-    marginRight: 12,
   },
-  appointmentInfo: {
+  cardTitleGroup: {
     flex: 1,
+    gap: 4,
   },
-  appointmentTitle: {
+  cardTitle: {
     fontSize: 16,
-    fontWeight: 'bold',
-    color: '#1F2937',
-    marginBottom: 4,
+    fontWeight: '700',
+    color: colors.text,
   },
-  doctorName: {
-    fontSize: 14,
-    color: '#3B82F6',
-    fontWeight: '600',
-    marginBottom: 2,
-  },
-  specialty: {
+  cardLabel: {
     fontSize: 12,
-    color: '#6B7280',
+    fontWeight: '600',
   },
-  statusBadge: {
+  statusChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
     paddingHorizontal: 12,
     paddingVertical: 6,
-    borderRadius: 16,
+    borderRadius: 12,
   },
   statusText: {
     fontSize: 12,
     fontWeight: '600',
+    textTransform: 'capitalize',
   },
-  cardDetails: {
-    marginBottom: 16,
-    gap: 8,
+  cardBody: {
+    gap: 10,
   },
-  detailRow: {
+  infoRow: {
     flexDirection: 'row',
     alignItems: 'center',
+    gap: 10,
   },
-  detailText: {
-    marginLeft: 8,
-    fontSize: 14,
-    color: '#6B7280',
+  infoText: {
     flex: 1,
+    fontSize: 14,
+    color: colors.subsection,
   },
   cardActions: {
     flexDirection: 'row',
-    gap: 8,
+    flexWrap: 'wrap',
+    gap: 12,
   },
   actionButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: 8,
-    backgroundColor: '#F3F4F6',
-    flex: 1,
-    justifyContent: 'center',
-  },
-  cancelButton: {
-    backgroundColor: '#FEE2E2',
+    gap: 8,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    borderRadius: 12,
+    backgroundColor: '#E2E8F0',
   },
   actionText: {
-    marginLeft: 4,
-    fontSize: 12,
-    color: '#3B82F6',
-    fontWeight: '500',
-  },
-  cancelText: {
-    color: '#EF4444',
+    fontSize: 13,
+    fontWeight: '600',
   },
   emptyState: {
     alignItems: 'center',
-    paddingVertical: 60,
-    paddingHorizontal: 32,
+    paddingVertical: 40,
+    paddingHorizontal: 24,
+    backgroundColor: colors.surface,
+    borderRadius: 22,
+    shadowColor: '#0F172A',
+    shadowOffset: {width: 0, height: 8},
+    shadowOpacity: 0.06,
+    shadowRadius: 14,
+    elevation: 4,
   },
-  emptyIconContainer: {
-    width: 120,
-    height: 120,
-    borderRadius: 60,
-    backgroundColor: '#F3F4F6',
+  emptyIconWrapper: {
+    width: 96,
+    height: 96,
+    borderRadius: 48,
+    backgroundColor: '#EEF2FF',
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 24,
+    marginBottom: 18,
   },
   emptyTitle: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: '#1F2937',
+    fontSize: 18,
+    fontWeight: '700',
+    color: colors.text,
     marginBottom: 8,
     textAlign: 'center',
   },
-  emptyText: {
-    fontSize: 14,
-    color: '#6B7280',
+  emptyDescription: {
+    fontSize: 13,
+    color: colors.muted,
     textAlign: 'center',
     lineHeight: 20,
-    marginBottom: 24,
+    marginBottom: 18,
   },
   emptyButton: {
-    backgroundColor: '#3B82F6',
+    backgroundColor: colors.primary,
     paddingHorizontal: 24,
     paddingVertical: 12,
-    borderRadius: 8,
+    borderRadius: 999,
   },
   emptyButtonText: {
     color: '#FFFFFF',
+    fontWeight: '700',
     fontSize: 14,
-    fontWeight: '600',
-  },
-  bottomSpacing: {
-    height: 32,
   },
 });
 

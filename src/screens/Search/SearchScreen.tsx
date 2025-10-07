@@ -1,4 +1,5 @@
-import React, {useState} from 'react';
+import React, {useMemo, useState} from 'react';
+import type {ListRenderItem} from 'react-native';
 import {
   View,
   Text,
@@ -7,13 +8,15 @@ import {
   TouchableOpacity,
   ScrollView,
   FlatList,
-  Dimensions,
 } from 'react-native';
+import {LinearGradient} from 'expo-linear-gradient';
 import {MaterialIcons} from '@expo/vector-icons';
 
-const {width} = Dimensions.get('window');
+import {colors, gradients} from '../../theme/colors';
 
-interface Hospital {
+type FacilityKind = 'hospital' | 'clinica' | 'laboratorio';
+
+type Hospital = {
   id: string;
   nome: string;
   endereco: string;
@@ -21,105 +24,121 @@ interface Hospital {
   especialidades: string[];
   avaliacao: number;
   distancia: string;
-  tipo: 'hospital' | 'clinica' | 'laboratorio';
+  tipo: FacilityKind;
   horarioFuncionamento: string;
-}
+};
+
+type FilterOption = {
+  id: 'todos' | FacilityKind;
+  label: string;
+  icon: keyof typeof MaterialIcons.glyphMap;
+};
+
+const filters: FilterOption[] = [
+  {id: 'todos', label: 'Todos', icon: 'view-list'},
+  {id: 'hospital', label: 'Hospitais', icon: 'local-hospital'},
+  {id: 'clinica', label: 'Clínicas', icon: 'medical-services'},
+  {id: 'laboratorio', label: 'Laboratórios', icon: 'science'},
+];
+
+const hospitalsData: Hospital[] = [
+  {
+    id: '1',
+    nome: 'Hospital São Lucas',
+    endereco: 'Rua das Flores, 123 - Centro',
+    telefone: '(11) 3333-4444',
+    especialidades: ['Cardiologia', 'Neurologia', 'Ortopedia', 'Pediatria'],
+    avaliacao: 4.5,
+    distancia: '2.3 km',
+    tipo: 'hospital',
+    horarioFuncionamento: '24h',
+  },
+  {
+    id: '2',
+    nome: 'Hospital Santa Maria',
+    endereco: 'Av. Principal, 456 - Jardim América',
+    telefone: '(11) 5555-6666',
+    especialidades: ['Pediatria', 'Ginecologia', 'Dermatologia', 'Psiquiatria'],
+    avaliacao: 4.2,
+    distancia: '3.1 km',
+    tipo: 'hospital',
+    horarioFuncionamento: '24h',
+  },
+  {
+    id: '3',
+    nome: 'Clínica Vida Nova',
+    endereco: 'Rua da Saúde, 789 - Vila Nova',
+    telefone: '(11) 7777-8888',
+    especialidades: ['Clínica Geral', 'Cardiologia'],
+    avaliacao: 4.0,
+    distancia: '1.8 km',
+    tipo: 'clinica',
+    horarioFuncionamento: '6h às 22h',
+  },
+  {
+    id: '4',
+    nome: 'Laboratório Diagnóstica',
+    endereco: 'Av. Central, 321 - Centro',
+    telefone: '(11) 9999-0000',
+    especialidades: ['Exames Laboratoriais', 'Diagnóstico por Imagem'],
+    avaliacao: 4.3,
+    distancia: '2.8 km',
+    tipo: 'laboratorio',
+    horarioFuncionamento: '6h às 18h',
+  },
+];
+
+const getTypeConfig = (tipo: FacilityKind) => {
+  switch (tipo) {
+    case 'hospital':
+      return {color: colors.primary, bg: '#E0F2FE'};
+    case 'clinica':
+      return {color: colors.success, bg: '#D1FAE5'};
+    case 'laboratorio':
+      return {color: '#6C2BD9', bg: '#EDE9FE'};
+    default:
+      return {color: colors.muted, bg: '#E2E8F0'};
+  }
+};
 
 const SearchScreen = () => {
   const [searchQuery, setSearchQuery] = useState('');
-  const [activeFilter, setActiveFilter] = useState('todos');
+  const [activeFilter, setActiveFilter] = useState<FilterOption['id']>('todos');
 
-  const hospitals: Hospital[] = [
-    {
-      id: '1',
-      nome: 'Hospital São Lucas',
-      endereco: 'Rua das Flores, 123 - Centro',
-      telefone: '(11) 3333-4444',
-      especialidades: ['Cardiologia', 'Neurologia', 'Ortopedia', 'Pediatria'],
-      avaliacao: 4.5,
-      distancia: '2.3 km',
-      tipo: 'hospital',
-      horarioFuncionamento: '24h',
-    },
-    {
-      id: '2',
-      nome: 'Hospital Santa Maria',
-      endereco: 'Av. Principal, 456 - Jardim América',
-      telefone: '(11) 5555-6666',
-      especialidades: ['Pediatria', 'Ginecologia', 'Dermatologia', 'Psiquiatria'],
-      avaliacao: 4.2,
-      distancia: '3.1 km',
-      tipo: 'hospital',
-      horarioFuncionamento: '24h',
-    },
-    {
-      id: '3',
-      nome: 'Clínica Vida Nova',
-      endereco: 'Rua da Saúde, 789 - Vila Nova',
-      telefone: '(11) 7777-8888',
-      especialidades: ['Clínica Geral', 'Cardiologia'],
-      avaliacao: 4.0,
-      distancia: '1.8 km',
-      tipo: 'clinica',
-      horarioFuncionamento: '6h às 22h',
-    },
-    {
-      id: '4',
-      nome: 'Laboratório Diagnóstica',
-      endereco: 'Av. Central, 321 - Centro',
-      telefone: '(11) 9999-0000',
-      especialidades: ['Exames Laboratoriais', 'Diagnóstico por Imagem'],
-      avaliacao: 4.3,
-      distancia: '2.8 km',
-      tipo: 'laboratorio',
-      horarioFuncionamento: '6h às 18h',
-    },
-  ];
+  const filteredHospitals = useMemo(
+    () =>
+      hospitalsData.filter(hospital => {
+        const query = searchQuery.trim().toLowerCase();
+        const matchesSearch =
+          query.length === 0 ||
+          hospital.nome.toLowerCase().includes(query) ||
+          hospital.especialidades.some(esp => esp.toLowerCase().includes(query));
 
-  const filters = [
-    {id: 'todos', label: 'Todos', icon: 'view-list'},
-    {id: 'hospital', label: 'Hospitais', icon: 'local-hospital'},
-    {id: 'clinica', label: 'Clínicas', icon: 'medical-services'},
-    {id: 'laboratorio', label: 'Laboratórios', icon: 'science'},
-  ];
+        const matchesFilter = activeFilter === 'todos' || hospital.tipo === activeFilter;
 
-  const filteredHospitals = hospitals.filter(hospital => {
-    const matchesSearch = hospital.nome.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      hospital.especialidades.some(esp =>
-        esp.toLowerCase().includes(searchQuery.toLowerCase())
-      );
-    
-    const matchesFilter = activeFilter === 'todos' || hospital.tipo === activeFilter;
-    
-    return matchesSearch && matchesFilter;
-  });
+        return matchesSearch && matchesFilter;
+      }),
+    [activeFilter, searchQuery],
+  );
 
-  const getTypeConfig = (tipo: string) => {
-    switch (tipo) {
-      case 'hospital':
-        return { color: '#3B82F6', bg: '#EFF6FF' };
-      case 'clinica':
-        return { color: '#10B981', bg: '#ECFDF5' };
-      case 'laboratorio':
-        return { color: '#8B5CF6', bg: '#F3E8FF' };
-      default:
-        return { color: '#6B7280', bg: '#F3F4F6' };
-    }
-  };
-
-  const renderHospitalCard = ({item}: {item: Hospital}) => {
+  const renderHospitalCard: ListRenderItem<Hospital> = ({item}) => {
     const typeConfig = getTypeConfig(item.tipo);
-    
+
     return (
-      <TouchableOpacity style={styles.hospitalCard} activeOpacity={0.8}>
+      <TouchableOpacity style={styles.hospitalCard} activeOpacity={0.85}>
         <View style={styles.hospitalHeader}>
           <View style={styles.hospitalTitleContainer}>
-            <View style={[styles.typeIndicator, {backgroundColor: typeConfig.bg}]}>
-              <MaterialIcons 
-                name={item.tipo === 'hospital' ? 'local-hospital' : 
-                      item.tipo === 'clinica' ? 'medical-services' : 'science'} 
-                size={16} 
-                color={typeConfig.color} 
+            <View style={[styles.typeIndicator, {backgroundColor: typeConfig.bg}]}> 
+              <MaterialIcons
+                name={
+                  item.tipo === 'hospital'
+                    ? 'local-hospital'
+                    : item.tipo === 'clinica'
+                    ? 'medical-services'
+                    : 'science'
+                }
+                size={16}
+                color={typeConfig.color}
               />
             </View>
             <View style={styles.hospitalInfo}>
@@ -130,33 +149,33 @@ const SearchScreen = () => {
             </View>
           </View>
           <View style={styles.ratingContainer}>
-            <MaterialIcons name="star" size={16} color="#F59E0B" />
+            <MaterialIcons name="star" size={16} color={colors.warning} />
             <Text style={styles.rating}>{item.avaliacao}</Text>
           </View>
         </View>
-        
+
         <View style={styles.hospitalDetails}>
           <View style={styles.detailRow}>
-            <MaterialIcons name="location-on" size={16} color="#6B7280" />
+            <MaterialIcons name="location-on" size={16} color={colors.muted} />
             <Text style={styles.detailText}>{item.endereco}</Text>
           </View>
           <View style={styles.detailRow}>
-            <MaterialIcons name="access-time" size={16} color="#6B7280" />
+            <MaterialIcons name="access-time" size={16} color={colors.muted} />
             <Text style={styles.detailText}>{item.horarioFuncionamento}</Text>
           </View>
           <View style={styles.detailRow}>
-            <MaterialIcons name="near-me" size={16} color="#3B82F6" />
-            <Text style={[styles.detailText, {color: '#3B82F6', fontWeight: '500'}]}>
+            <MaterialIcons name="near-me" size={16} color={colors.primary} />
+            <Text style={[styles.detailText, {color: colors.primary, fontWeight: '600'}]}>
               {item.distancia}
             </Text>
           </View>
         </View>
-        
+
         <View style={styles.specialtiesContainer}>
           <Text style={styles.specialtiesLabel}>Especialidades:</Text>
           <View style={styles.specialtiesList}>
-            {item.especialidades.slice(0, 3).map((especialidade, index) => (
-              <View key={index} style={[styles.specialtyTag, {backgroundColor: typeConfig.bg}]}>
+            {item.especialidades.slice(0, 3).map(especialidade => (
+              <View key={especialidade} style={[styles.specialtyTag, {backgroundColor: typeConfig.bg}]}> 
                 <Text style={[styles.specialtyText, {color: typeConfig.color}]}>
                   {especialidade}
                 </Text>
@@ -164,389 +183,391 @@ const SearchScreen = () => {
             ))}
             {item.especialidades.length > 3 && (
               <View style={styles.moreSpecialties}>
-                <Text style={styles.moreSpecialtiesText}>
-                  +{item.especialidades.length - 3}
-                </Text>
+                <Text style={styles.moreSpecialtiesText}>+{item.especialidades.length - 3}</Text>
               </View>
             )}
           </View>
         </View>
-        
+
         <View style={styles.cardActions}>
           <TouchableOpacity style={styles.actionButton}>
-            <MaterialIcons name="phone" size={18} color="#3B82F6" />
-            <Text style={styles.actionText}>Ligar</Text>
+            <MaterialIcons name="phone" size={18} color={colors.primary} />
+            <Text style={[styles.actionText, {color: colors.primary}]}>Ligar</Text>
           </TouchableOpacity>
           <TouchableOpacity style={styles.actionButton}>
-            <MaterialIcons name="directions" size={18} color="#10B981" />
-            <Text style={[styles.actionText, {color: '#10B981'}]}>Direções</Text>
+            <MaterialIcons name="directions" size={18} color={colors.success} />
+            <Text style={[styles.actionText, {color: colors.success}]}>Direções</Text>
           </TouchableOpacity>
           <TouchableOpacity style={[styles.actionButton, styles.primaryAction]}>
             <MaterialIcons name="calendar-today" size={18} color="#FFFFFF" />
-            <Text style={[styles.actionText, styles.primaryActionText]}>
-              Agendar
-            </Text>
+            <Text style={[styles.actionText, styles.primaryActionText]}>Agendar</Text>
           </TouchableOpacity>
         </View>
       </TouchableOpacity>
     );
   };
 
-  return (
-    <View style={styles.container}>
-      {/* Header */}
-      <View style={styles.header}>
-        <Text style={styles.headerTitle}>Buscar Unidades</Text>
-        <Text style={styles.headerSubtitle}>Encontre hospitais, clínicas e laboratórios</Text>
-      </View>
-
-      {/* Search Bar */}
-      <View style={styles.searchContainer}>
-        <View style={styles.searchInputContainer}>
-          <MaterialIcons name="search" size={20} color="#6B7280" />
+  const renderHeader = () => (
+    <View>
+      <LinearGradient colors={gradients.primary} style={styles.heroArea}>
+        <Text style={styles.heroTitle}>Explore a nossa rede integrada</Text>
+        <Text style={styles.heroSubtitle}>
+          Conecte-se rapidamente aos melhores especialistas, hospitais e laboratórios perto de você.
+        </Text>
+        <View style={styles.searchBar}>
+          <MaterialIcons name="search" size={20} color={colors.muted} />
           <TextInput
             style={styles.searchInput}
-            placeholder="Buscar por nome ou especialidade..."
-            placeholderTextColor="#9CA3AF"
+            placeholder="Buscar por especialidade, unidade ou profissional"
+            placeholderTextColor="rgba(15,74,131,0.6)"
             value={searchQuery}
             onChangeText={setSearchQuery}
           />
           {searchQuery.length > 0 && (
             <TouchableOpacity onPress={() => setSearchQuery('')}>
-              <MaterialIcons name="clear" size={20} color="#6B7280" />
+              <MaterialIcons name="close" size={18} color={colors.muted} />
             </TouchableOpacity>
           )}
         </View>
-      </View>
+      </LinearGradient>
 
-      {/* Filters */}
-      <ScrollView 
-        horizontal 
+      <ScrollView
+        horizontal
         showsHorizontalScrollIndicator={false}
         style={styles.filtersContainer}
         contentContainerStyle={styles.filtersContent}>
         {filters.map(filter => (
           <TouchableOpacity
             key={filter.id}
-            style={[
-              styles.filterButton,
-              activeFilter === filter.id && styles.filterButtonActive,
-            ]}
+            style={[styles.filterChip, activeFilter === filter.id && styles.filterChipActive]}
             onPress={() => setActiveFilter(filter.id)}
-            activeOpacity={0.8}>
-            <MaterialIcons 
-              name={filter.icon} 
-              size={16} 
-              color={activeFilter === filter.id ? '#FFFFFF' : '#6B7280'} 
+            activeOpacity={0.85}>
+            <MaterialIcons
+              name={filter.icon}
+              size={16}
+              color={activeFilter === filter.id ? '#FFFFFF' : colors.subsection}
             />
             <Text
-              style={[
-                styles.filterText,
-                activeFilter === filter.id && styles.filterTextActive,
-              ]}>
+              style={[styles.filterChipLabel, activeFilter === filter.id && styles.filterChipLabelActive]}>
               {filter.label}
             </Text>
           </TouchableOpacity>
         ))}
       </ScrollView>
 
-      {/* Results */}
       <View style={styles.resultsHeader}>
-        <Text style={styles.resultsCount}>
-          {filteredHospitals.length} {filteredHospitals.length === 1 ? 'resultado' : 'resultados'} encontrados
-        </Text>
-        <TouchableOpacity style={styles.sortButton}>
-          <MaterialIcons name="sort" size={16} color="#6B7280" />
-          <Text style={styles.sortText}>Ordenar</Text>
+        <View>
+          <Text style={styles.resultsCount}>{filteredHospitals.length} unidades encontradas</Text>
+          <Text style={styles.resultsHint}>Resultados adaptados à sua localização e preferências</Text>
+        </View>
+        <TouchableOpacity style={styles.sortButton} activeOpacity={0.8}>
+          <MaterialIcons name="tune" size={18} color={colors.primaryDark} />
+          <Text style={styles.sortLabel}>Classificar</Text>
         </TouchableOpacity>
       </View>
+    </View>
+  );
 
-      {/* Hospital List */}
-      {filteredHospitals.length > 0 ? (
-        <FlatList
-          data={filteredHospitals}
-          renderItem={renderHospitalCard}
-          keyExtractor={item => item.id}
-          contentContainerStyle={styles.listContainer}
-          showsVerticalScrollIndicator={false}
-        />
-      ) : (
-        <View style={styles.emptyState}>
-          <View style={styles.emptyIconContainer}>
-            <MaterialIcons name="search-off" size={64} color="#E5E7EB" />
-          </View>
-          <Text style={styles.emptyTitle}>Nenhum resultado encontrado</Text>
-          <Text style={styles.emptyText}>
-            Tente buscar por outro termo ou ajuste os filtros
-          </Text>
-        </View>
-      )}
+  const renderEmpty = () => (
+    <View style={styles.emptyState}>
+      <View style={styles.emptyIconWrapper}>
+        <MaterialIcons name="travel-explore" size={64} color="rgba(15,107,168,0.25)" />
+      </View>
+      <Text style={styles.emptyTitle}>Não encontramos resultados nesta busca</Text>
+      <Text style={styles.emptyDescription}>
+        Ajuste os filtros ou tente um termo diferente para descobrir novas possibilidades próximas a você.
+      </Text>
+    </View>
+  );
+
+  return (
+    <View style={styles.screen}>
+      <FlatList
+        data={filteredHospitals}
+        keyExtractor={item => item.id}
+        renderItem={renderHospitalCard}
+        ListHeaderComponent={renderHeader}
+        ListEmptyComponent={renderEmpty}
+        contentContainerStyle={styles.listContent}
+        showsVerticalScrollIndicator={false}
+      />
     </View>
   );
 };
 
 const styles = StyleSheet.create({
-  container: {
+  screen: {
     flex: 1,
-    backgroundColor: '#F8FAFC',
+    backgroundColor: colors.background,
   },
-  header: {
-    backgroundColor: '#3B82F6',
-    paddingTop: 50,
-    paddingHorizontal: 24,
-    paddingBottom: 24,
+  listContent: {
+    paddingBottom: 90,
   },
-  headerTitle: {
+  heroArea: {
+    paddingHorizontal: 22,
+    paddingTop: 28,
+    paddingBottom: 32,
+    borderBottomLeftRadius: 28,
+    borderBottomRightRadius: 28,
+    gap: 16,
+  },
+  heroTitle: {
     fontSize: 24,
-    fontWeight: 'bold',
+    fontWeight: '700',
     color: '#FFFFFF',
-    marginBottom: 4,
   },
-  headerSubtitle: {
+  heroSubtitle: {
     fontSize: 14,
-    color: 'rgba(255, 255, 255, 0.8)',
+    color: 'rgba(255,255,255,0.82)',
+    lineHeight: 20,
   },
-  searchContainer: {
-    paddingHorizontal: 24,
-    paddingVertical: 16,
-    backgroundColor: '#FFFFFF',
-  },
-  searchInputContainer: {
+  searchBar: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#F3F4F6',
-    borderRadius: 12,
+    gap: 10,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 18,
     paddingHorizontal: 16,
     paddingVertical: 12,
+    shadowColor: '#0F172A',
+    shadowOffset: {width: 0, height: 6},
+    shadowOpacity: 0.1,
+    shadowRadius: 14,
+    elevation: 6,
   },
   searchInput: {
     flex: 1,
-    marginLeft: 8,
-    fontSize: 16,
-    color: '#1F2937',
+    fontSize: 15,
+    color: colors.primaryDark,
   },
   filtersContainer: {
-    backgroundColor: '#FFFFFF',
-    paddingBottom: 16,
+    marginTop: 18,
   },
   filtersContent: {
-    paddingHorizontal: 24,
+    paddingHorizontal: 20,
+    gap: 12,
   },
-  filterButton: {
+  filterChip: {
     flexDirection: 'row',
     alignItems: 'center',
+    gap: 8,
     paddingHorizontal: 16,
-    paddingVertical: 8,
-    marginRight: 12,
-    borderRadius: 20,
-    backgroundColor: '#F3F4F6',
-    borderWidth: 1,
-    borderColor: '#E5E7EB',
+    paddingVertical: 10,
+    borderRadius: 18,
+    backgroundColor: '#E2E8F0',
   },
-  filterButtonActive: {
-    backgroundColor: '#3B82F6',
-    borderColor: '#3B82F6',
+  filterChipActive: {
+    backgroundColor: colors.primary,
+    shadowColor: '#0F172A',
+    shadowOffset: {width: 0, height: 6},
+    shadowOpacity: 0.12,
+    shadowRadius: 12,
+    elevation: 4,
   },
-  filterText: {
-    fontSize: 14,
-    color: '#6B7280',
-    marginLeft: 6,
-    fontWeight: '500',
+  filterChipLabel: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: colors.subsection,
   },
-  filterTextActive: {
+  filterChipLabelActive: {
     color: '#FFFFFF',
   },
   resultsHeader: {
+    marginTop: 24,
+    paddingHorizontal: 20,
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingHorizontal: 24,
-    paddingVertical: 16,
-    backgroundColor: '#FFFFFF',
-    borderBottomWidth: 1,
-    borderBottomColor: '#E5E7EB',
   },
   resultsCount: {
-    fontSize: 14,
-    color: '#6B7280',
-    fontWeight: '500',
+    fontSize: 16,
+    fontWeight: '700',
+    color: colors.text,
+  },
+  resultsHint: {
+    fontSize: 12,
+    color: colors.muted,
+    marginTop: 4,
   },
   sortButton: {
     flexDirection: 'row',
     alignItems: 'center',
+    gap: 6,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    borderRadius: 14,
+    backgroundColor: '#E0F2FE',
   },
-  sortText: {
-    fontSize: 14,
-    color: '#6B7280',
-    marginLeft: 4,
-  },
-  listContainer: {
-    padding: 24,
+  sortLabel: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: colors.primaryDark,
   },
   hospitalCard: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 16,
+    backgroundColor: colors.surface,
+    borderRadius: 22,
+    marginHorizontal: 20,
+    marginTop: 18,
     padding: 20,
-    marginBottom: 16,
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.05,
-    shadowRadius: 8,
-    elevation: 3,
+    shadowColor: '#0F172A',
+    shadowOffset: {width: 0, height: 8},
+    shadowOpacity: 0.08,
+    shadowRadius: 18,
+    elevation: 6,
   },
   hospitalHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'flex-start',
+    alignItems: 'center',
     marginBottom: 16,
   },
   hospitalTitleContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    flex: 1,
-    marginRight: 12,
+    gap: 12,
   },
   typeIndicator: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
+    width: 36,
+    height: 36,
+    borderRadius: 18,
     justifyContent: 'center',
     alignItems: 'center',
-    marginRight: 12,
   },
   hospitalInfo: {
     flex: 1,
   },
   hospitalName: {
     fontSize: 18,
-    fontWeight: 'bold',
-    color: '#1F2937',
-    marginBottom: 2,
+    fontWeight: '700',
+    color: colors.text,
   },
   hospitalType: {
-    fontSize: 12,
-    color: '#6B7280',
-    textTransform: 'uppercase',
-    fontWeight: '500',
+    fontSize: 13,
+    color: colors.muted,
   },
   ratingContainer: {
     flexDirection: 'row',
     alignItems: 'center',
+    gap: 6,
     backgroundColor: '#FEF3C7',
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 12,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 16,
   },
   rating: {
-    marginLeft: 4,
     fontSize: 14,
-    color: '#92400E',
-    fontWeight: '600',
+    color: '#B45309',
+    fontWeight: '700',
   },
   hospitalDetails: {
+    gap: 10,
     marginBottom: 16,
-    gap: 8,
   },
   detailRow: {
     flexDirection: 'row',
     alignItems: 'center',
+    gap: 10,
   },
   detailText: {
-    marginLeft: 8,
-    fontSize: 14,
-    color: '#6B7280',
     flex: 1,
+    fontSize: 14,
+    color: colors.subsection,
   },
   specialtiesContainer: {
     marginBottom: 16,
   },
   specialtiesLabel: {
-    fontSize: 12,
-    color: '#6B7280',
-    fontWeight: '500',
+    fontSize: 13,
+    color: colors.muted,
     marginBottom: 8,
   },
   specialtiesList: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 6,
+    gap: 10,
   },
   specialtyTag: {
-    paddingHorizontal: 8,
-    paddingVertical: 4,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
     borderRadius: 12,
   },
   specialtyText: {
     fontSize: 12,
-    fontWeight: '500',
+    fontWeight: '600',
   },
   moreSpecialties: {
-    paddingHorizontal: 8,
-    paddingVertical: 4,
+    backgroundColor: '#E2E8F0',
+    paddingHorizontal: 10,
+    paddingVertical: 6,
     borderRadius: 12,
-    backgroundColor: '#F3F4F6',
   },
   moreSpecialtiesText: {
     fontSize: 12,
-    color: '#6B7280',
-    fontWeight: '500',
+    color: colors.subsection,
+    fontWeight: '600',
   },
   cardActions: {
     flexDirection: 'row',
-    gap: 8,
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginTop: 8,
   },
   actionButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: 8,
-    backgroundColor: '#F3F4F6',
-    flex: 1,
-    justifyContent: 'center',
-  },
-  primaryAction: {
-    backgroundColor: '#3B82F6',
+    gap: 8,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    borderRadius: 12,
+    backgroundColor: '#E2E8F0',
   },
   actionText: {
-    marginLeft: 4,
-    fontSize: 12,
-    color: '#3B82F6',
-    fontWeight: '500',
+    fontSize: 13,
+    fontWeight: '600',
+  },
+  primaryAction: {
+    backgroundColor: colors.primary,
   },
   primaryActionText: {
     color: '#FFFFFF',
   },
   emptyState: {
-    flex: 1,
     alignItems: 'center',
-    justifyContent: 'center',
-    paddingHorizontal: 32,
+    padding: 40,
+    marginHorizontal: 20,
+    marginTop: 32,
+    backgroundColor: colors.surface,
+    borderRadius: 24,
+    shadowColor: '#0F172A',
+    shadowOffset: {width: 0, height: 6},
+    shadowOpacity: 0.08,
+    shadowRadius: 16,
+    elevation: 4,
   },
-  emptyIconContainer: {
-    width: 120,
-    height: 120,
-    borderRadius: 60,
-    backgroundColor: '#F3F4F6',
+  emptyIconWrapper: {
+    width: 110,
+    height: 110,
+    borderRadius: 55,
+    backgroundColor: '#EEF2FF',
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 24,
+    marginBottom: 18,
   },
   emptyTitle: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: '#1F2937',
-    marginBottom: 8,
+    fontSize: 18,
+    fontWeight: '700',
+    color: colors.text,
     textAlign: 'center',
+    marginBottom: 8,
   },
-  emptyText: {
-    fontSize: 14,
-    color: '#6B7280',
+  emptyDescription: {
+    fontSize: 13,
+    color: colors.muted,
     textAlign: 'center',
     lineHeight: 20,
+  },
+  footerWrapper: {
+    marginTop: 24,
   },
 });
 
