@@ -149,7 +149,7 @@ const SearchScreen = () => {
             </View>
           </View>
           <View style={styles.ratingContainer}>
-            <MaterialIcons name="star" size={16} color={colors.warning} />
+            <MaterialIcons name="star" size={14} color={colors.warning} />
             <Text style={styles.rating}>{item.avaliacao}</Text>
           </View>
         </View>
@@ -345,16 +345,17 @@ const styles = StyleSheet.create({
   },
   filtersContent: {
     paddingHorizontal: 20,
-    gap: 12,
+    gap: 10,
   },
   filterChip: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
-    paddingHorizontal: 16,
-    paddingVertical: 10,
-    borderRadius: 18,
+    gap: 6,
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: 16,
     backgroundColor: '#E2E8F0',
+    minHeight: 36,
   },
   filterChipActive: {
     backgroundColor: colors.primary,
@@ -418,13 +419,15 @@ const styles = StyleSheet.create({
   hospitalHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'center',
+    alignItems: 'flex-start',
     marginBottom: 16,
+    gap: 12,
   },
   hospitalTitleContainer: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 12,
+    flex: 1,
   },
   typeIndicator: {
     width: 36,
@@ -448,14 +451,16 @@ const styles = StyleSheet.create({
   ratingContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
+    gap: 4,
     backgroundColor: '#FEF3C7',
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 16,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 12,
+    minWidth: 50,
+    justifyContent: 'center',
   },
   rating: {
-    fontSize: 14,
+    fontSize: 12,
     color: '#B45309',
     fontWeight: '700',
   },
