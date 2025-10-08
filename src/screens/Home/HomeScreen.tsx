@@ -256,9 +256,21 @@ const HomeScreen = ({navigation}: any) => {
           <Text style={styles.sectionSubtitle}>
             Monitore sua saúde com insights personalizados gerados pelas suas atividades recentes.
           </Text>
-          <View style={styles.wellbeingGrid}>
-            {wellbeingHighlights.map(highlight => (
-              <View key={highlight.id} style={[styles.wellbeingCard, {backgroundColor: highlight.color}]}> 
+          <ScrollView 
+            horizontal 
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.wellbeingCarousel}
+            style={styles.wellbeingScrollView}
+          >
+            {wellbeingHighlights.map((highlight, index) => (
+              <View 
+                key={highlight.id} 
+                style={[
+                  styles.wellbeingCard, 
+                  {backgroundColor: highlight.color},
+                  index === wellbeingHighlights.length - 1 && styles.lastCard
+                ]}
+              > 
                 <View style={[styles.iconBadge, {backgroundColor: '#FFFFFF33'}]}>
                   <MaterialIcons name={highlight.icon} size={22} color={highlight.textColor} />
                 </View>
@@ -266,7 +278,7 @@ const HomeScreen = ({navigation}: any) => {
                 <Text style={[styles.wellbeingDescription, {color: highlight.textColor}]}> {highlight.description}</Text>
               </View>
             ))}
-          </View>
+          </ScrollView>
         </View>
 
         <View style={styles.section}>
@@ -476,14 +488,15 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: colors.subsection,
   },
-  wellbeingGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 16,
+  wellbeingScrollView: {
     marginTop: 18,
   },
+  wellbeingCarousel: {
+    paddingHorizontal: 0,
+  },
   wellbeingCard: {
-    flexBasis: '48%',
+    width: 280,
+    marginRight: 16,
     borderRadius: 18,
     padding: 18,
     gap: 10,
@@ -492,6 +505,9 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.04,
     shadowRadius: 10,
     elevation: 3,
+  },
+  lastCard: {
+    marginRight: 0,
   },
   iconBadge: {
     alignSelf: 'flex-start',
