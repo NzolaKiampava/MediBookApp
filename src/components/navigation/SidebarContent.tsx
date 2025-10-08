@@ -4,7 +4,7 @@ import {
   DrawerItemList,
   DrawerContentComponentProps,
 } from '@react-navigation/drawer';
-import {View, Text, StyleSheet, TouchableOpacity} from 'react-native';
+import {View, Text, StyleSheet, TouchableOpacity, ImageBackground} from 'react-native';
 import {LinearGradient} from 'expo-linear-gradient';
 import {MaterialIcons} from '@expo/vector-icons';
 
@@ -18,14 +18,20 @@ const SidebarContent: React.FC<DrawerContentComponentProps> = props => {
 
   return (
     <View style={styles.container}>
-      <LinearGradient colors={gradients.primary} style={styles.header}>
-        <View style={styles.avatar}>
-          <Text style={styles.avatarText}>{firstName.charAt(0).toUpperCase()}</Text>
+      <ImageBackground 
+        source={require('../../../assets/banner-image.webp')}
+        style={styles.headerBackground}
+        resizeMode="cover"
+      >
+        <View style={styles.header}>
+          <View style={styles.avatar}>
+            <Text style={styles.avatarText}>{firstName.charAt(0).toUpperCase()}</Text>
+          </View>
+          <Text style={styles.welcome}>Olá,</Text>
+          <Text style={styles.name}>{firstName}</Text>
+          <Text style={styles.subtitle}>Estamos cuidando da sua jornada de saúde</Text>
         </View>
-        <Text style={styles.welcome}>Olá,</Text>
-        <Text style={styles.name}>{firstName}</Text>
-        <Text style={styles.subtitle}>Estamos cuidando da sua jornada de saúde</Text>
-      </LinearGradient>
+      </ImageBackground>
 
       <DrawerContentScrollView
         {...props}
@@ -57,12 +63,18 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: colors.surface,
   },
+  headerBackground: {
+    borderBottomLeftRadius: 24,
+    borderBottomRightRadius: 24,
+    overflow: 'hidden',
+  },
   header: {
     paddingHorizontal: 20,
     paddingTop: 60,
     paddingBottom: 32,
     borderBottomLeftRadius: 24,
     borderBottomRightRadius: 24,
+    backgroundColor: 'rgba(37, 99, 235, 0.3)',
   },
   avatar: {
     width: 64,

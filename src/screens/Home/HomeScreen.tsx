@@ -165,7 +165,7 @@ const HomeScreen = ({navigation}: any) => {
         showsVerticalScrollIndicator={false}>
         <LinearGradient colors={gradients.primary} style={styles.heroSection}>
           <View style={styles.heroHeader}>
-            <View style={styles.heroTextContainer}>
+            <View>
               <Text style={styles.greeting}>Olá, {firstName}</Text>
               <Text style={styles.heroTitle}>Como podemos cuidar de você hoje?</Text>
             </View>
@@ -314,36 +314,28 @@ const styles = StyleSheet.create({
     paddingBottom: 90,
   },
   heroSection: {
-    paddingHorizontal: 20,
-    paddingTop: 48,
-    paddingBottom: 32,
-    borderBottomLeftRadius: 28,
-    borderBottomRightRadius: 28,
-    gap: 24,
-    minHeight: 200,
+    paddingHorizontal: 24,
+    paddingTop: 42,
+    paddingBottom: 36,
+    borderBottomLeftRadius: 32,
+    borderBottomRightRadius: 32,
+    gap: 22,
   },
   heroHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'flex-start',
-    gap: 12,
-  },
-  heroTextContainer: {
-    flex: 1,
-    paddingRight: 8,
   },
   greeting: {
-    fontSize: 15,
-    color: 'rgba(255,255,255,0.85)',
-    marginBottom: 8,
-    fontWeight: '500',
+    fontSize: 16,
+    color: 'rgba(255,255,255,0.82)',
+    marginBottom: 6,
   },
   heroTitle: {
-    fontSize: 22,
+    fontSize: 24,
     fontWeight: '700',
     color: '#FFFFFF',
-    lineHeight: 28,
-    letterSpacing: -0.5,
+    lineHeight: 30,
   },
   heroBadge: {
     flexDirection: 'row',
